@@ -1,0 +1,21 @@
+.diving {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.diving-search {
+  position: fixed;
+  top: 50%;
+  margin-top: -60px;
+}
+
+.diving-loading-tips {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+}
