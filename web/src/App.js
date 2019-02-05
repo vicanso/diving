@@ -2,13 +2,13 @@ import React, { Component } from 'react';
 import './App.css';
 import ImageSearch from './ImageSearch';
 import LinearProgress from '@material-ui/core/LinearProgress';
-import Button from '@material-ui/core/Button';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogContentText from '@material-ui/core/DialogContentText';
-import DialogTitle from '@material-ui/core/DialogTitle';
 import axios from 'axios';
+import { Grid, Table, TableRow, TableCell, TableHead, TableBody } from '@material-ui/core';
+import Paper from '@material-ui/core/Paper';
+import bytes from 'bytes';
+import CodeIcon from '@material-ui/icons/Code';
+import IconButton from '@material-ui/core/IconButton'
+import Message from './Message';
 
 function getErrorMessage(err) {
   if (!err) {
@@ -20,9 +20,40 @@ function getErrorMessage(err) {
   return err.message;
 }
 
+function createTitle(title, left) {
+  return (
+    <div
+      style={{
+        lineHeight: '40px',
+        position: 'relative',
+        fontSize: '16px',
+        color: '#333',
+      }} 
+    >
+      <h3
+        style={{
+          margin: 0,
+          fontWeight: 600,
+        }}
+      >{title}</h3>
+      <div
+        style={{
+          borderBottom: '1px solid rgba(80, 80, 80, 0.85)',
+          position: 'absolute',
+          left: left,
+          right: 0,
+          top: '50%',
+          marginTop: '1px',
+        }}
+      ></div>
+    </div>
+  )
+}
+
 class App extends Component {
   state = {
     status: '',
+    detailCmdID: '',
     error: null,
     basicInfo: null,
   }
@@ -58,10 +89,133 @@ class App extends Component {
       });
     }
   }
+  toggleDetailCmd(id) {
+    const {
+      detailCmdID,
+    } = this.state;
+    if (id !== detailCmdID) {
+      this.setState({
+        detailCmdID: id,
+      });
+      return;
+    }
+    this.setState({
+      detailCmdID: '',
+    });
+  }
+  renderBasicInfo() {
+    const {
+      basicInfo,
+      detailCmdID,
+    } = this.state;
+    const cmdLimit = 24;
+    const rows = basicInfo.layerAnalysisList.map((row) => {
+      let cmd = row.command;
+      if (cmd.length > cmdLimit) {
+        cmd = cmd.substring(0, cmdLimit) + '...';
+      }
+      let detailCmd = null;
+      if (detailCmdID === row.id) {
+        detailCmd = (
+          <Paper
+            className="diving-command"
+          >
+            {row.command}
+          </Paper>
+        );
+      }
+
+      return (
+        <TableRow key={row.id}>
+          <TableCell>{row.shortID}</TableCell>
+          <TableCell
+            align="right"
+          >{bytes.format(row.size)}</TableCell>
+          <TableCell
+          >
+            <IconButton
+              key="detail"
+              aria-label="Code"
+              style={{
+                float: 'right',
+              }}
+              onClick={() => this.toggleDetailCmd(row.id)}
+            >
+              <CodeIcon />
+            </IconButton>
+            {detailCmd}
+            {cmd}
+          </TableCell>
+        </TableRow>
+      )
+    });
+    return (
+      <Grid
+        item
+        sm={6}
+      >
+        <Paper className="diving-layers">
+          {createTitle("[Layers]", '90px')}
+          <Table
+            style={{
+              tableLayout: 'fixed',
+            }}
+          >
+            <TableHead><TableRow>
+              <TableCell>Image ID</TableCell>
+              <TableCell
+                align="right"
+              >Size</TableCell>
+              <TableCell>Command</TableCell>
+            </TableRow></TableHead>
+            <TableBody>
+              {rows}
+            </TableBody>
+          </Table>
+        </Paper>
+      </Grid>
+    )
+  }
+  renderFileTree() {
+    return (
+      <Grid
+        item
+        sm={6}
+      >
+      </Grid>
+    )
+  }
+  renderResult() {
+    const {
+      basicInfo,
+    } = this.state
+    if (!basicInfo) {
+      return null;
+    }
+    return (
+      <Grid container spacing={24}>
+        {this.renderBasicInfo()}
+        {this.renderFileTree()}
+      </Grid>
+    )
+  }
+  renderError() {
+    const {
+      error,
+    } = this.state;
+    if (!error) {
+      return null;
+    }
+    return (
+      <Message
+        variant={"error"}
+        message={getErrorMessage(error)}
+      />
+    )
+  }
   renderSearch() {
     const {
       status,
-      error,
       basicInfo,
     } = this.state
     if (basicInfo) {
@@ -85,34 +239,6 @@ class App extends Component {
           />
           { loadingTips }
         </div>
-        <Dialog
-          open={error !== null}
-          onClose={() => this.setState({
-            error: null,
-          })}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle>
-            {"Get image's information fail"}
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              {getErrorMessage(error)}
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={() => this.setState({
-                error: null,
-              })}
-              color="primary"
-              autoFocus
-            >
-              OK
-            </Button>
-          </DialogActions>
-        </Dialog>
       </div>
     )
   }
@@ -120,6 +246,8 @@ class App extends Component {
     return (
       <div className="diving">
         {this.renderSearch()}
+        {this.renderResult()}
+        {this.renderError()}
       </div>
     );
   }

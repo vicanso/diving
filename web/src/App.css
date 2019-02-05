@@ -6,6 +6,7 @@
   align-items: center;
   font-size: calc(10px + 2vmin);
   color: white;
+  font-size: 14px;
 }
 
 .diving-search {
@@ -18,4 +19,25 @@
   text-align: center;
   font-size: 18px;
   font-weight: 600;
+}
+
+.diving-layers {
+  margin: 5px;
+  padding: 5px;
+  overflow-x: auto;
+}
+
+.diving-layers table tbody tr:nth-child(2n + 1) {
+  background-color: #fafafa;
+}
+
+.diving-command {
+  position: absolute;
+  width: 500px;
+  line-height: 32px;
+  padding: 15px;
+  margin-top: 50px;
+  z-index: 9;
+  max-height: 500px;
+  overflow-y: auto;
 }
