@@ -103,7 +103,7 @@ class App extends Component {
       detailCmdID: '',
     });
   }
-  renderBasicInfo() {
+  renderLayerInfo() {
     const {
       basicInfo,
       detailCmdID,
@@ -150,29 +150,83 @@ class App extends Component {
       )
     });
     return (
+      <Paper className="diving-layers">
+        {createTitle("[Layers]", '80px')}
+        <Table
+          style={{
+            tableLayout: 'fixed',
+          }}
+        >
+          <TableHead><TableRow>
+            <TableCell>Image ID</TableCell>
+            <TableCell
+              align="right"
+            >Size</TableCell>
+            <TableCell>Command</TableCell>
+          </TableRow></TableHead>
+          <TableBody>
+            {rows}
+          </TableBody>
+        </Table>
+      </Paper>
+    );
+  }
+  renderInefficiency() {
+    const {
+      basicInfo,
+    } = this.state;
+    const {
+      inefficiencyAnalysisList,
+    } = basicInfo;
+    if (!inefficiencyAnalysisList || !inefficiencyAnalysisList.length) {
+      return null;
+    }
+    const files = inefficiencyAnalysisList.slice(0);
+    files.sort((item1, item2) => {
+      return item1.cumulativeSize - item2.cumulativeSize;
+    }).reverse();
+    const rows = files.map((file) => {
+      const size = bytes.format(file.cumulativeSize);
+      return (
+        <TableRow key={file.path}>
+          <TableCell>{file.path}</TableCell>
+          <TableCell
+            align="right"
+          >{size}</TableCell>
+        </TableRow>
+      );
+    });
+    return (
+      <Paper className="diving-inefficiency">
+        {createTitle("[Inefficiency]", '130px')}
+        <Table
+          style={{
+            tableLayout: 'fixed',
+          }}
+        >
+          <TableHead>
+            <TableRow>
+              <TableCell>File</TableCell>
+              <TableCell
+                align="right"
+              >Size</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows}
+          </TableBody>
+        </Table>
+      </Paper>
+    )
+  }
+  renderBasicInfo() {
+    return (
       <Grid
         item
         sm={6}
       >
-        <Paper className="diving-layers">
-          {createTitle("[Layers]", '90px')}
-          <Table
-            style={{
-              tableLayout: 'fixed',
-            }}
-          >
-            <TableHead><TableRow>
-              <TableCell>Image ID</TableCell>
-              <TableCell
-                align="right"
-              >Size</TableCell>
-              <TableCell>Command</TableCell>
-            </TableRow></TableHead>
-            <TableBody>
-              {rows}
-            </TableBody>
-          </Table>
-        </Paper>
+        {this.renderLayerInfo()}
+        {this.renderInefficiency()}
       </Grid>
     )
   }
@@ -193,7 +247,7 @@ class App extends Component {
       return null;
     }
     return (
-      <Grid container spacing={24}>
+      <Grid container spacing={0}>
         {this.renderBasicInfo()}
         {this.renderFileTree()}
       </Grid>

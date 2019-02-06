@@ -4,7 +4,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: calc(10px + 2vmin);
   color: white;
   font-size: 14px;
 }
@@ -21,13 +20,13 @@
   font-weight: 600;
 }
 
-.diving-layers {
+.diving-layers, .diving-inefficiency {
   margin: 5px;
   padding: 5px;
   overflow-x: auto;
 }
 
-.diving-layers table tbody tr:nth-child(2n + 1) {
+.diving-layers table tbody tr:nth-child(2n + 1), .diving-inefficiency table tbody tr:nth-child(2n + 1){
   background-color: #fafafa;
 }
 
