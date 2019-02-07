@@ -2,6 +2,8 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
+	"strings"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/vicanso/cod"
@@ -40,7 +42,11 @@ func init() {
 	imageInfoCache = c
 	g := router.NewAPIGroup("/images")
 	ctrl := imageCtrl{}
-	g.GET("/*name", ctrl.getBasicInfo)
+
+	g.GET("/tree/*name", ctrl.getTree)
+
+	g.GET("/detail/*name", ctrl.getBasicInfo)
+
 }
 
 func doAnalyze(name string) {
@@ -60,7 +66,6 @@ func doAnalyze(name string) {
 		Status:   analysisDone,
 		Analysis: analysis,
 	})
-
 }
 
 // getBasicInfo get basic info of image
@@ -88,5 +93,51 @@ func (ctrl imageCtrl) getBasicInfo(c *cod.Context) (err error) {
 	}
 	c.CacheMaxAge("5m")
 	c.Body = info.Analysis
+	return
+}
+
+func (ctrl imageCtrl) getTree(c *cod.Context) (err error) {
+	index, e := strconv.Atoi(c.QueryParam("layer"))
+	if e != nil {
+		err = hes.NewWithErrorStatusCode(e, http.StatusBadRequest)
+		return
+	}
+
+	name := c.Param("name")[1:]
+	var info *imageInfo
+	v, ok := imageInfoCache.Get(name)
+	if !ok {
+		err = hes.New("can not get tree of image")
+		return
+	}
+	info = v.(*imageInfo)
+	if info.Err != nil {
+		err = info.Err
+		return
+	}
+	if info.Status != analysisDone {
+		err = hes.New("the image is analysising, please wait for a moment")
+		return
+	}
+	layerAnalysisList := info.Analysis.LayerAnalysisList
+	if index > len(layerAnalysisList) {
+		err = hes.New("layer no is too big")
+		return
+	}
+	path := c.QueryParam("path")
+
+	currentPathDict := make(map[string]bool)
+	// 获取当前目录下的所有子目录（仅下一层）
+	for _, item := range info.Analysis.FilePathList {
+		if !strings.HasPrefix(item, path) {
+			continue
+		}
+		v := item[len(path):]
+		arr := strings.Split(v, "/")
+		currentPathDict[path+arr[0]] = true
+	}
+
+	c.Body = layerAnalysisList[index].FileAnalysis
+
 	return
 }

@@ -1,7 +1,8 @@
 package service
 
 import (
-	"sort"
+	"os"
+	"strings"
 
 	"github.com/wagoodman/dive/filetree"
 	"github.com/wagoodman/dive/image"
@@ -31,39 +32,18 @@ type (
 		Index   int    `json:"index,omitempty"`
 		Command string `json:"command,omitempty"`
 		Size    uint64 `json:"size,omitempty"`
-		// FileAnalysisList analysis for file of layer
-		FileAnalysisList []*FileAnalysis `json:"-"`
+		// FileAnalysis analysis for file of layer
+		FileAnalysis *FileAnalysis `json:"-"`
 	}
-	// FileAnalysis analysis for file
+	// FileAnalysis analysis info for file
 	FileAnalysis struct {
-		Path     string
-		Size     int64
-		LinkName string
-		Mode     string
-		// const (
-		// 	Unchanged DiffType = iota
-		// 	Changed
-		// 	Added
-		// 	Removed
-		// )
-		DiffType filetree.DiffType
-	}
-	// FileAnalysisDiffInfo analysis diff info for file
-	FileAnalysisDiffInfo struct {
-		// Layer layer of container
-		Layer    int    `json:"layer,omitempty"`
-		Size     int64  `json:"size,omitempty"`
-		LinkName string `json:"linkName,omitempty"`
-		Mode     string `json:"mode,omitempty"`
-		Type     int    `json:"type,omitempty"`
-	}
-	// FileAnalysisInfo analysis info for file
-	FileAnalysisInfo struct {
-		Path      string                  `json:"path,omitempty"`
-		Size      int64                   `json:"size,omitempty"`
-		LinkName  string                  `json:"linkName,omitempty"`
-		Mode      string                  `json:"mode,omitempty"`
-		DiffInfos []*FileAnalysisDiffInfo `json:"diffInfos,omitempty"`
+		// Path      string                  `json:"path,omitempty"`
+		IsDir    bool                     `json:"isDir,omitempty"`
+		Size     int64                    `json:"size,omitempty"`
+		LinkName string                   `json:"linkName,omitempty"`
+		Mode     os.FileMode              `json:"mode,omitempty"`
+		DiffType filetree.DiffType        `json:"diffType,omitempty"`
+		Children map[string]*FileAnalysis `json:"children,omitempty"`
 	}
 	// InefficiencyAnalysis analysis for inefficiency
 	InefficiencyAnalysis struct {
@@ -72,8 +52,23 @@ type (
 	}
 )
 
-func analyzeFile(layer, upperLayer image.Layer) ([]*FileAnalysis, error) {
-	fileAnalysisList := make([]*FileAnalysis, 0, 100)
+func findOrCreateDir(m *FileAnalysis, pathList []string) *FileAnalysis {
+	current := m
+	for _, path := range pathList {
+		if current.Children[path] == nil {
+			current.Children[path] = &FileAnalysis{
+				IsDir:    true,
+				Children: make(map[string]*FileAnalysis),
+			}
+		}
+		current = current.Children[path]
+	}
+	return current
+}
+
+func analyzeFile(layer, upperLayer image.Layer) (*FileAnalysis, error) {
+	// fileAnalysisList := make([]*FileAnalysis, 0, 100)
+
 	tree := layer.Tree()
 	if upperLayer != nil {
 		err := tree.Compare(upperLayer.Tree())
@@ -81,21 +76,29 @@ func analyzeFile(layer, upperLayer image.Layer) ([]*FileAnalysis, error) {
 			return nil, err
 		}
 	}
+	// fileAnalysisMap := make(map[string]*FileAnalysis)
+	topFileAnalysis := &FileAnalysis{
+		IsDir:    true,
+		Children: make(map[string]*FileAnalysis),
+	}
 	tree.VisitDepthChildFirst(func(node *filetree.FileNode) error {
 		fileInfo := node.Data.FileInfo
 		if fileInfo.IsDir || fileInfo.Path == "" {
+			// TODO 对于dir的填充
 			return nil
 		}
-		fileAnalysisList = append(fileAnalysisList, &FileAnalysis{
-			Path:     fileInfo.Path,
+		arr := strings.SplitN(fileInfo.Path, "/", -1)
+		m := findOrCreateDir(topFileAnalysis, arr[:len(arr)-1])
+		m.Children[arr[len(arr)-1]] = &FileAnalysis{
 			Size:     fileInfo.Size,
 			LinkName: fileInfo.Linkname,
-			Mode:     fileInfo.Mode.String(),
+			Mode:     fileInfo.Mode,
 			DiffType: node.Data.DiffType,
-		})
+		}
 		return nil
 	}, nil)
-	return fileAnalysisList, nil
+	return topFileAnalysis, nil
+	// return fileAnalysisList, nil
 }
 
 // Analyze analyze the docker images
@@ -121,7 +124,6 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 		UserSizeByes:      result.UserSizeByes,
 		WastedBytes:       result.WastedBytes,
 		LayerAnalysisList: make([]*LayerAnalysis, len(result.Layers)),
-		// InefficiencyAnalysisList: make([]*InefficiencyAnalysis, len(result.Inefficiencies)),
 	}
 
 	// 分析生成低效数据（多个之间文件层覆盖）
@@ -145,7 +147,6 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 		layers[layer.Index()] = layer
 	}
 
-	allFilePathMap := make(map[string]bool)
 	for index, layer := range layers {
 		var upperLayer image.Layer
 		if index < len(result.Layers)-1 {
@@ -160,22 +161,17 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 		}
 		imgAnalysis.LayerAnalysisList[index] = la
 
-		fileAnalysisList, e := analyzeFile(layer, upperLayer)
+		fileAnalysis, e := analyzeFile(layer, upperLayer)
 		if e != nil {
 			err = e
 			return
 		}
-		for _, fileAnalysis := range fileAnalysisList {
-			allFilePathMap[fileAnalysis.Path] = true
-		}
-		la.FileAnalysisList = fileAnalysisList
+		la.FileAnalysis = fileAnalysis
 	}
 
-	allFilePathList := make([]string, 0, len(allFilePathMap))
-	for path := range allFilePathMap {
-		allFilePathList = append(allFilePathList, path)
-	}
-	sort.Strings(allFilePathList)
-	imgAnalysis.FilePathList = allFilePathList
 	return
+}
+
+func init() {
+	Analyze("node:alpine")
 }
