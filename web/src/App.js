@@ -150,7 +150,7 @@ class App extends Component {
       )
     });
     return (
-      <Paper className="diving-layers">
+      <Paper className="diving-infos diving-layers">
         {createTitle("[Layers]", '80px')}
         <Table
           style={{
@@ -197,7 +197,7 @@ class App extends Component {
       );
     });
     return (
-      <Paper className="diving-inefficiency">
+      <Paper className="diving-infos diving-inefficiency">
         {createTitle("[Inefficiency]", '130px')}
         <Table
           style={{
@@ -220,11 +220,22 @@ class App extends Component {
     )
   }
   renderBasicInfo() {
+    const {
+      basicInfo,
+    } = this.state;
+    const efficiency = (basicInfo.efficiency * 100).toFixed(2);
     return (
       <Grid
         item
         sm={6}
       >
+        <Paper className="diving-infos">
+          {createTitle("[Basic Info]", '110px')}
+          <p>Image efficiency:{efficiency}%</p>
+          <p>Image size:{bytes.format(basicInfo.sizeBytes)}</p>
+          <p>User size:{bytes.format(basicInfo.userSizeByes)}</p>
+          <p>Wasted size:{bytes.format(basicInfo.wastedBytes)}</p>
+        </Paper>
         {this.renderLayerInfo()}
         {this.renderInefficiency()}
       </Grid>
@@ -242,7 +253,7 @@ class App extends Component {
   renderResult() {
     const {
       basicInfo,
-    } = this.state
+    } = this.state;
     if (!basicInfo) {
       return null;
     }

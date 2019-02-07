@@ -20,13 +20,14 @@
   font-weight: 600;
 }
 
-.diving-layers, .diving-inefficiency {
+.diving-infos {
   margin: 5px;
   padding: 5px;
   overflow-x: auto;
+  color: #333;
 }
 
-.diving-layers table tbody tr:nth-child(2n + 1), .diving-inefficiency table tbody tr:nth-child(2n + 1){
+.diving-infos table tbody tr:nth-child(2n + 1) {
   background-color: #fafafa;
 }
 
