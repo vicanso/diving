@@ -5,10 +5,18 @@ import LinearProgress from '@material-ui/core/LinearProgress';
 import axios from 'axios';
 import { Grid, Table, TableRow, TableCell, TableHead, TableBody } from '@material-ui/core';
 import Paper from '@material-ui/core/Paper';
+import AppBar from '@material-ui/core/AppBar';
 import bytes from 'bytes';
 import CodeIcon from '@material-ui/icons/Code';
+import CloseIcon from '@material-ui/icons/Close';
 import IconButton from '@material-ui/core/IconButton'
+import Toolbar from '@material-ui/core/Toolbar';
+import Typography from '@material-ui/core/Typography';
+import DonutLargeIcon from '@material-ui/icons/DonutLarge';
+
 import Message from './Message';
+
+const sizeColor = '#1a237e';
 
 function getErrorMessage(err) {
   if (!err) {
@@ -53,6 +61,7 @@ function createTitle(title, left) {
 class App extends Component {
   state = {
     status: '',
+    image: '',
     detailCmdID: '',
     error: null,
     basicInfo: null,
@@ -103,6 +112,15 @@ class App extends Component {
       detailCmdID: '',
     });
   }
+  onSearch(image) {
+    if (!image) {
+      return;
+    }
+    this.setState({
+      image,
+    });
+    this.getBasicInfo(image);
+  }
   renderLayerInfo() {
     const {
       basicInfo,
@@ -130,6 +148,9 @@ class App extends Component {
           <TableCell>{row.shortID}</TableCell>
           <TableCell
             align="right"
+            style={{
+              color: sizeColor,
+            }}
           >{bytes.format(row.size)}</TableCell>
           <TableCell
           >
@@ -191,6 +212,9 @@ class App extends Component {
         <TableRow key={file.path}>
           <TableCell>{file.path}</TableCell>
           <TableCell
+            style={{
+              color: sizeColor,
+            }}
             align="right"
           >{size}</TableCell>
         </TableRow>
@@ -224,17 +248,45 @@ class App extends Component {
       basicInfo,
     } = this.state;
     const efficiency = (basicInfo.efficiency * 100).toFixed(2);
+    const infos = [
+      {
+        desc: 'Image efficiency:',
+        value: `${efficiency}%`,
+      },
+      {
+        desc: 'Image size:',
+        value: bytes.format(basicInfo.sizeBytes),
+      },
+      {
+        desc: 'User size:',
+        value: bytes.format(basicInfo.userSizeByes),
+      },
+      {
+        desc: 'Wasted size:',
+        value: bytes.format(basicInfo.wastedBytes),
+      },
+    ];
     return (
       <Grid
         item
         sm={6}
       >
-        <Paper className="diving-infos">
-          {createTitle("[Basic Info]", '110px')}
-          <p>Image efficiency:{efficiency}%</p>
-          <p>Image size:{bytes.format(basicInfo.sizeBytes)}</p>
-          <p>User size:{bytes.format(basicInfo.userSizeByes)}</p>
-          <p>Wasted size:{bytes.format(basicInfo.wastedBytes)}</p>
+        <Paper className="diving-infos diving-detail">
+          {createTitle("[Detail]", '73px')}
+          {
+            infos.map((item) => {
+              return (
+                <p>
+                  {item.desc}
+                  <span
+                    style={{
+                      color: sizeColor,
+                    }}
+                  >{item.value}</span>
+                </p>
+              );
+            })
+          }
         </Paper>
         {this.renderLayerInfo()}
         {this.renderInefficiency()}
@@ -253,15 +305,54 @@ class App extends Component {
   renderResult() {
     const {
       basicInfo,
+      image,
     } = this.state;
     if (!basicInfo) {
       return null;
     }
     return (
-      <Grid container spacing={0}>
-        {this.renderBasicInfo()}
-        {this.renderFileTree()}
-      </Grid>
+      <div>
+      <AppBar
+        position="static"
+        className="diving-app-bar"
+        style={{
+          // backgroundColor: '#2196f3',
+        }}
+      >
+        <Toolbar variant="dense">
+          <Typography
+            variant="h6"
+            color="inherit"
+            style={{
+              width: '100%',
+            }}
+          >
+            <IconButton
+              color="inherit"
+              aria-label="DonutLarge"
+            >
+              <DonutLargeIcon />
+            </IconButton>
+            {image.toUpperCase()}
+          </Typography>
+          <IconButton
+            color="inherit"
+            aria-label="Close"
+            onClick={() => this.setState({
+              basicInfo: null,
+            })}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+        <Grid container spacing={0}
+          className="diving-grid"
+        >
+          {this.renderBasicInfo()}
+          {this.renderFileTree()}
+        </Grid>
+      </div>
     )
   }
   renderError() {
@@ -300,7 +391,7 @@ class App extends Component {
       <div className="diving-search">
         <div>
           <ImageSearch
-            onSearch={(name) => this.getBasicInfo(name.trim())}
+            onSearch={(name) => this.onSearch(name.trim())}
           />
           { loadingTips }
         </div>

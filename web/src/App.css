@@ -41,3 +41,12 @@
   max-height: 500px;
   overflow-y: auto;
 }
+
+.diving-detail p {
+  margin: 0;
+  line-height: 32px;
+}
+
+.diving-detail p span {
+  margin-left: 5px;
+}

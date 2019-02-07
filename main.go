@@ -82,10 +82,9 @@ func main() {
 		return c.Next()
 	})
 
-	// 因为有使用pike做缓存（已包括ETag fresh compress的处理），无需要添加此类中间件
-	// d.Use(middleware.NewDefaultFresh())
-	// d.Use(middleware.NewDefaultETag())
-	// d.Use(middleware.NewDefaultCompress())
+	d.Use(middleware.NewDefaultFresh())
+	d.Use(middleware.NewDefaultETag())
+	d.Use(middleware.NewDefaultCompress())
 
 	d.Use(middleware.NewDefaultResponder())
 
