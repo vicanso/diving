@@ -3,7 +3,6 @@ package controller
 import (
 	"net/http"
 	"strconv"
-	"strings"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/vicanso/cod"
@@ -124,18 +123,7 @@ func (ctrl imageCtrl) getTree(c *cod.Context) (err error) {
 		err = hes.New("layer no is too big")
 		return
 	}
-	path := c.QueryParam("path")
-
-	currentPathDict := make(map[string]bool)
-	// 获取当前目录下的所有子目录（仅下一层）
-	for _, item := range info.Analysis.FilePathList {
-		if !strings.HasPrefix(item, path) {
-			continue
-		}
-		v := item[len(path):]
-		arr := strings.Split(v, "/")
-		currentPathDict[path+arr[0]] = true
-	}
+	// path := c.QueryParam("path")
 
 	c.Body = layerAnalysisList[index].FileAnalysis
 

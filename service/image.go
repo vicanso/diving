@@ -23,7 +23,6 @@ type (
 		LayerAnalysisList []*LayerAnalysis `json:"layerAnalysisList,omitempty"`
 		// InefficiencyAnalysisList inefficiency analysis list
 		InefficiencyAnalysisList []*InefficiencyAnalysis `json:"inefficiencyAnalysisList,omitempty"`
-		FilePathList             []string                `json:"-"`
 	}
 	// LayerAnalysis analysis for layer
 	LayerAnalysis struct {
@@ -67,7 +66,6 @@ func findOrCreateDir(m *FileAnalysis, pathList []string) *FileAnalysis {
 }
 
 func analyzeFile(layer, upperLayer image.Layer) (*FileAnalysis, error) {
-	// fileAnalysisList := make([]*FileAnalysis, 0, 100)
 
 	tree := layer.Tree()
 	if upperLayer != nil {
@@ -76,19 +74,23 @@ func analyzeFile(layer, upperLayer image.Layer) (*FileAnalysis, error) {
 			return nil, err
 		}
 	}
-	// fileAnalysisMap := make(map[string]*FileAnalysis)
 	topFileAnalysis := &FileAnalysis{
 		IsDir:    true,
 		Children: make(map[string]*FileAnalysis),
 	}
 	tree.VisitDepthChildFirst(func(node *filetree.FileNode) error {
 		fileInfo := node.Data.FileInfo
-		if fileInfo.IsDir || fileInfo.Path == "" {
-			// TODO 对于dir的填充
+		if fileInfo.Path == "" {
 			return nil
 		}
 		arr := strings.SplitN(fileInfo.Path, "/", -1)
-		m := findOrCreateDir(topFileAnalysis, arr[:len(arr)-1])
+		end := len(arr) - 1
+		m := findOrCreateDir(topFileAnalysis, arr[:end])
+		if fileInfo.IsDir {
+			m.Mode = fileInfo.Mode
+			return nil
+		}
+
 		m.Children[arr[len(arr)-1]] = &FileAnalysis{
 			Size:     fileInfo.Size,
 			LinkName: fileInfo.Linkname,
@@ -97,8 +99,24 @@ func analyzeFile(layer, upperLayer image.Layer) (*FileAnalysis, error) {
 		}
 		return nil
 	}, nil)
+	countDirSize(topFileAnalysis)
 	return topFileAnalysis, nil
-	// return fileAnalysisList, nil
+}
+
+func countDirSize(fileAnalysis *FileAnalysis) int64 {
+	if !fileAnalysis.IsDir {
+		return fileAnalysis.Size
+	}
+	var size int64
+	for _, item := range fileAnalysis.Children {
+		if item.IsDir {
+			size += countDirSize(item)
+			continue
+		}
+		size += item.Size
+	}
+	fileAnalysis.Size = size
+	return size
 }
 
 // Analyze analyze the docker images
@@ -170,8 +188,4 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 	}
 
 	return
-}
-
-func init() {
-	Analyze("node:alpine")
 }
