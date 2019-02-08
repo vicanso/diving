@@ -90,7 +90,9 @@ func (ctrl imageCtrl) getBasicInfo(c *cod.Context) (err error) {
 		err = hes.NewWithError(info.Err)
 		return
 	}
-	c.CacheMaxAge("5m")
+	if !service.IsDev() {
+		c.CacheMaxAge("5m")
+	}
 	c.Body = info.Analysis
 	return
 }

@@ -1,7 +1,7 @@
 package service
 
 import (
-	"os"
+	"strconv"
 	"strings"
 
 	"github.com/wagoodman/dive/filetree"
@@ -36,11 +36,11 @@ type (
 	}
 	// FileAnalysis analysis info for file
 	FileAnalysis struct {
-		// Path      string                  `json:"path,omitempty"`
+		IDS      string                   `json:"ids,omitempty"`
 		IsDir    bool                     `json:"isDir,omitempty"`
 		Size     int64                    `json:"size,omitempty"`
 		LinkName string                   `json:"linkName,omitempty"`
-		Mode     os.FileMode              `json:"mode,omitempty"`
+		Mode     string                   `json:"mode,omitempty"`
 		DiffType filetree.DiffType        `json:"diffType,omitempty"`
 		Children map[string]*FileAnalysis `json:"children,omitempty"`
 	}
@@ -48,6 +48,7 @@ type (
 	InefficiencyAnalysis struct {
 		Path           string `json:"path,omitempty"`
 		CumulativeSize int64  `json:"cumulativeSize,omitempty"`
+		Count          int    `json:"count,omitempty"`
 	}
 )
 
@@ -86,15 +87,17 @@ func analyzeFile(layer, upperLayer image.Layer) (*FileAnalysis, error) {
 		arr := strings.SplitN(fileInfo.Path, "/", -1)
 		end := len(arr) - 1
 		m := findOrCreateDir(topFileAnalysis, arr[:end])
+		ids := strconv.Itoa(fileInfo.Uid) + ":" + strconv.Itoa(fileInfo.Gid)
 		if fileInfo.IsDir {
-			m.Mode = fileInfo.Mode
+			m.Mode = fileInfo.Mode.String()
+			m.IDS = ids
 			return nil
 		}
-
 		m.Children[arr[len(arr)-1]] = &FileAnalysis{
+			IDS:      ids,
 			Size:     fileInfo.Size,
 			LinkName: fileInfo.Linkname,
-			Mode:     fileInfo.Mode,
+			Mode:     fileInfo.Mode.String(),
 			DiffType: node.Data.DiffType,
 		}
 		return nil
@@ -153,6 +156,7 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 		inefficiencyAnalysisList = append(inefficiencyAnalysisList, &InefficiencyAnalysis{
 			Path:           item.Path,
 			CumulativeSize: item.CumulativeSize,
+			Count:          len(item.Nodes),
 		})
 	}
 	imgAnalysis.InefficiencyAnalysisList = inefficiencyAnalysisList

@@ -10,6 +10,8 @@ import bytes from 'bytes';
 import CodeIcon from '@material-ui/icons/Code';
 import CloseIcon from '@material-ui/icons/Close';
 import IconButton from '@material-ui/core/IconButton'
+import BorderInnerIcon from '@material-ui/icons/BorderInner';
+import BorderClearIcon from '@material-ui/icons/BorderClear';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import DonutLargeIcon from '@material-ui/icons/DonutLarge';
@@ -65,6 +67,27 @@ class App extends Component {
     detailCmdID: '',
     error: null,
     basicInfo: null,
+    expands: [],
+    expandAll: false,
+    fileTree: null,
+  }
+  async getTree(layer = 0) {
+    const {
+      image,
+    } = this.state;
+    this.setState({
+      error: null,
+    });
+    try {
+      const res = await axios.get(`/api/images/tree/${image}?layer=${layer}`)
+      this.setState({
+        fileTree: res.data,
+      });
+    } catch (err) {
+      this.setState({
+        error: err,
+      });
+    }
   }
   async getBasicInfo(name, times = 0) {
     if (!name) {
@@ -80,7 +103,7 @@ class App extends Component {
       const {
         status,
         data,
-      } = await axios.get(`/api/images/${name}`)
+      } = await axios.get(`/api/images/detail/${name}`)
       if (status === 202) {
         setTimeout(() => {
           this.getBasicInfo(name, times + 1);
@@ -91,12 +114,54 @@ class App extends Component {
         status: '',
         basicInfo: data,
       });
+      this.getTree(1);
     } catch (err) {
       this.setState({
         error: err,
         status: '',
       });
     }
+  }
+  findExpandIndex(level, name) {
+    const {
+      expands,
+    } = this.state;
+    let found = -1;
+    expands.forEach((item, index) => {
+      if (found !== -1) {
+        return;
+      }
+      if (item.level === level && item.name === name) {
+        found = index;
+      }
+    });
+    return found;
+  }
+  toggleExpand(level, name) {
+    const {
+      expands,
+    } = this.state;
+    const index = this.findExpandIndex(level, name);
+    if (index !== -1) {
+      expands.splice(index, 1);
+    } else {
+      expands.push({
+        level,
+        name,
+      });
+    }
+    this.setState({
+      expands,
+    });
+  }
+  shouldExpand(level, name) {
+    const {
+      expandAll,
+    } = this.state;
+    if (expandAll) {
+      return true;
+    }
+    return this.findExpandIndex(level, name) !== -1
   }
   toggleDetailCmd(id) {
     const {
@@ -120,6 +185,14 @@ class App extends Component {
       image,
     });
     this.getBasicInfo(image);
+  }
+  goBack() {
+    this.setState({
+      basicInfo: null,
+      expandAll: false,
+      expands: [],
+      fileTree: null,
+    });
   }
   renderLayerInfo() {
     const {
@@ -217,6 +290,9 @@ class App extends Component {
             }}
             align="right"
           >{size}</TableCell>
+          <TableCell
+            align="right"
+          >{file.count}</TableCell>
         </TableRow>
       );
     });
@@ -233,7 +309,10 @@ class App extends Component {
               <TableCell>File</TableCell>
               <TableCell
                 align="right"
-              >Size</TableCell>
+              >Total Space</TableCell>
+              <TableCell
+                align="right"
+              >Count</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -276,7 +355,9 @@ class App extends Component {
           {
             infos.map((item) => {
               return (
-                <p>
+                <p
+                  key={item.desc}
+                >
                   {item.desc}
                   <span
                     style={{
@@ -294,11 +375,103 @@ class App extends Component {
     )
   }
   renderFileTree() {
+    const {
+      fileTree,
+    } = this.state;
+    if (!fileTree) {
+      return null;
+    }
+
+    const fileNodes = [];
+    fileNodes.push(
+      <div
+        key={'fields'}
+        className="diving-file-tree-item"
+      >
+        <span
+          className="mode"
+        >Permission</span>
+        <span
+          className="ids"
+        >UID:GID</span>
+        <span
+          className="size"
+        >Size</span>
+        <span
+        >FileTree</span>
+      </div>
+    );
+    const renderFileAnalysis = (tree, prefix, level) => {
+      if (!tree.children ||tree.children.length === 0) {
+        return null;
+      }
+      const keys = Object.keys(tree.children);
+      keys.forEach((k, index) => {
+        const item = tree.children[k];
+        const size = bytes.format(item.size);
+        let name = k;
+        if (item.linkName) {
+          name += ` → ${item.linkName}`;
+        }
+        let mode = item.mode;
+        if (mode && mode.charAt(0) === 'L') {
+          mode = '-' + mode.substring(1);
+        }
+        const hasChildren = item.children && item.children.length !== 0;
+        const expanded = this.shouldExpand(level, k);
+
+        fileNodes.push(
+          <div
+            className="diving-file-tree-item"
+            key={`${prefix}-${k}`}
+          >
+            <span
+              className="mode"
+            >{mode}</span>
+            <span
+              className="ids"
+            >{item.ids}</span>
+            <span
+              className="size"
+            >{size}</span>
+            <span
+              style={{
+                textIndent: `${level*26}px`,
+              }}
+            >
+              {hasChildren && <IconButton
+                style={{
+                  padding: 0,
+                  color: '#fff',
+                  marginRight: '5px',
+                }}
+                onClick={() => this.toggleExpand(level, name)}
+              >
+                {!expanded && <BorderInnerIcon
+                  fontSize="small"
+                />}
+                {expanded &&<BorderClearIcon
+                  fontSize="small"
+                />}
+              </IconButton>}
+              {name}
+            </span>
+          </div>
+        );
+        if (hasChildren && expanded) {
+          renderFileAnalysis(item, `${prefix}-${k}`, level + 1);
+        }
+      });
+    };
+
+    renderFileAnalysis(fileTree, "root", 0)
     return (
       <Grid
         item
         sm={6}
+        className="diving-file-tree"
       >
+        {fileNodes}
       </Grid>
     )
   }
@@ -315,9 +488,6 @@ class App extends Component {
       <AppBar
         position="static"
         className="diving-app-bar"
-        style={{
-          // backgroundColor: '#2196f3',
-        }}
       >
         <Toolbar variant="dense">
           <Typography
@@ -338,9 +508,7 @@ class App extends Component {
           <IconButton
             color="inherit"
             aria-label="Close"
-            onClick={() => this.setState({
-              basicInfo: null,
-            })}
+            onClick={() => this.goBack()}
           >
             <CloseIcon />
           </IconButton>

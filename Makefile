@@ -2,7 +2,7 @@
 
 # for dev
 dev:
-	fresh
+	export GO_ENV=dev && fresh
 
 # for test
 test:
