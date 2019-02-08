@@ -3,9 +3,21 @@ import './App.css';
 import ImageSearch from './ImageSearch';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import axios from 'axios';
-import { Grid, Table, TableRow, TableCell, TableHead, TableBody } from '@material-ui/core';
+import {
+  Grid,
+  Table,
+  TableRow,
+  TableCell,
+  TableHead,
+  TableBody,
+  MenuItem,
+  Select,
+} from '@material-ui/core';
 import Paper from '@material-ui/core/Paper';
 import AppBar from '@material-ui/core/AppBar';
+import FormControl from '@material-ui/core/FormControl';
+import InputLabel from '@material-ui/core/InputLabel';
+
 import bytes from 'bytes';
 import CodeIcon from '@material-ui/icons/Code';
 import CloseIcon from '@material-ui/icons/Close';
@@ -30,6 +42,7 @@ function getErrorMessage(err) {
   return err.message;
 }
 
+// 生成模块标题
 function createTitle(title, left) {
   return (
     <div
@@ -70,7 +83,9 @@ class App extends Component {
     expands: [],
     expandAll: false,
     fileTree: null,
+    selectedLayer: '',
   }
+  // 获取layter的文件树
   async getTree(layer = 0) {
     const {
       image,
@@ -89,6 +104,7 @@ class App extends Component {
       });
     }
   }
+  // 获取image的基本信息
   async getBasicInfo(name, times = 0) {
     if (!name) {
       return
@@ -114,7 +130,10 @@ class App extends Component {
         status: '',
         basicInfo: data,
       });
-      this.getTree(1);
+      if (data.layerAnalysisList) {
+        this.showLayer(data.layerAnalysisList[0].shortID);
+      }
+      // this.getTree(1);
     } catch (err) {
       this.setState({
         error: err,
@@ -137,6 +156,7 @@ class App extends Component {
     });
     return found;
   }
+  // 切换展开的显示
   toggleExpand(level, name) {
     const {
       expands,
@@ -154,15 +174,18 @@ class App extends Component {
       expands,
     });
   }
+  // 是否应该展开此目录
   shouldExpand(level, name) {
     const {
       expandAll,
     } = this.state;
+    // 如果设置全部展开
     if (expandAll) {
       return true;
     }
     return this.findExpandIndex(level, name) !== -1
   }
+  // 切换展示该layter的命令
   toggleDetailCmd(id) {
     const {
       detailCmdID,
@@ -186,7 +209,29 @@ class App extends Component {
     });
     this.getBasicInfo(image);
   }
+  showLayer(id = '') {
+    const {
+      basicInfo,
+    } = this.state;
+    this.setState({
+      selectedLayer: id,
+    });
+    if (!id) {
+      return;
+    }
+    let index = -1;
+    basicInfo.layerAnalysisList.forEach((item, i) => {
+      if (item.shortID === id) {
+        index = i;
+      }
+    });
+    if (index !== -1) {
+      this.getTree(index);
+    }
+  }
+  // 返回
   goBack() {
+    // 清除重置信息
     this.setState({
       basicInfo: null,
       expandAll: false,
@@ -194,6 +239,7 @@ class App extends Component {
       fileTree: null,
     });
   }
+  // 输出layer相关信息
   renderLayerInfo() {
     const {
       basicInfo,
@@ -265,6 +311,7 @@ class App extends Component {
       </Paper>
     );
   }
+  // 输出重复文件的信息
   renderInefficiency() {
     const {
       basicInfo,
@@ -322,6 +369,7 @@ class App extends Component {
       </Paper>
     )
   }
+  // 输出镜像的基本信息
   renderBasicInfo() {
     const {
       basicInfo,
@@ -374,6 +422,47 @@ class App extends Component {
       </Grid>
     )
   }
+  renderFormControl() {
+    const {
+      basicInfo,
+    } = this.state;
+    const menuItems = basicInfo.layerAnalysisList.map((item) => {
+      return (
+        <MenuItem
+          key={item.id}
+          value={item.shortID}
+        >
+          {item.shortID}
+        </MenuItem>
+      )
+    });
+    return (
+      <form
+        className="diving-control"
+      >
+        <FormControl>
+          <InputLabel 
+            htmlFor="age-customized-select"
+          >
+            Layer
+          </InputLabel>
+          <Select
+            onChange={(e) => {
+              this.showLayer(e.target.value);
+            }}
+            style={{
+              color: '#fff',
+              width: '250px',
+            }}
+            value={this.state.selectedLayer}
+          >
+            {menuItems} 
+          </Select>
+        </FormControl>
+      </form>
+    )
+  }
+  // 输出文件树
   renderFileTree() {
     const {
       fileTree,
@@ -463,7 +552,6 @@ class App extends Component {
         }
       });
     };
-
     renderFileAnalysis(fileTree, "root", 0)
     return (
       <Grid
@@ -471,6 +559,7 @@ class App extends Component {
         sm={6}
         className="diving-file-tree"
       >
+        {this.renderFormControl()} 
         {fileNodes}
       </Grid>
     )

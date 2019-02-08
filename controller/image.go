@@ -125,7 +125,6 @@ func (ctrl imageCtrl) getTree(c *cod.Context) (err error) {
 		err = hes.New("layer no is too big")
 		return
 	}
-	// path := c.QueryParam("path")
 
 	c.Body = layerAnalysisList[index].FileAnalysis
 

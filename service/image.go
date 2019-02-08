@@ -36,11 +36,15 @@ type (
 	}
 	// FileAnalysis analysis info for file
 	FileAnalysis struct {
-		IDS      string                   `json:"ids,omitempty"`
-		IsDir    bool                     `json:"isDir,omitempty"`
-		Size     int64                    `json:"size,omitempty"`
-		LinkName string                   `json:"linkName,omitempty"`
-		Mode     string                   `json:"mode,omitempty"`
+		IDS      string `json:"ids,omitempty"`
+		IsDir    bool   `json:"isDir,omitempty"`
+		Size     int64  `json:"size,omitempty"`
+		LinkName string `json:"linkName,omitempty"`
+		Mode     string `json:"mode,omitempty"`
+		// Unchanged DiffType = iota
+		// Changed
+		// Added
+		// Removed
 		DiffType filetree.DiffType        `json:"diffType,omitempty"`
 		Children map[string]*FileAnalysis `json:"children,omitempty"`
 	}

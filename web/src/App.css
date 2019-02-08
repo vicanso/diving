@@ -51,15 +51,17 @@
   margin-left: 5px;
 }
 
+.diving-file-tree {
+  padding: 10px;
+}
+
 .diving-file-tree-item {
   font-size: 16px;
-  /* font-weight: 600; */
 }
 .diving-file-tree-item > span {
   display: inline-block;
   line-height: 26px;
   margin-right: 15px;
-  /* margin: 0 10px; */
 }
 
 .diving-file-tree-item .mode {
