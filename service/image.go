@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -23,6 +24,7 @@ type (
 		LayerAnalysisList []*LayerAnalysis `json:"layerAnalysisList,omitempty"`
 		// InefficiencyAnalysisList inefficiency analysis list
 		InefficiencyAnalysisList []*InefficiencyAnalysis `json:"inefficiencyAnalysisList,omitempty"`
+		TreeCache                *filetree.TreeCache     `json:"-"`
 	}
 	// LayerAnalysis analysis for layer
 	LayerAnalysis struct {
@@ -32,7 +34,7 @@ type (
 		Command string `json:"command,omitempty"`
 		Size    uint64 `json:"size,omitempty"`
 		// FileAnalysis analysis for file of layer
-		FileAnalysis *FileAnalysis `json:"-"`
+		// FileAnalysis *FileAnalysis `json:"-"`
 	}
 	// FileAnalysis analysis info for file
 	FileAnalysis struct {
@@ -70,20 +72,16 @@ func findOrCreateDir(m *FileAnalysis, pathList []string) *FileAnalysis {
 	return current
 }
 
-func analyzeFile(layer, upperLayer image.Layer) (*FileAnalysis, error) {
+func analyzeFile(tree *filetree.FileTree) *FileAnalysis {
 
-	tree := layer.Tree()
-	if upperLayer != nil {
-		err := tree.Compare(upperLayer.Tree())
-		if err != nil {
-			return nil, err
-		}
-	}
 	topFileAnalysis := &FileAnalysis{
 		IsDir:    true,
 		Children: make(map[string]*FileAnalysis),
 	}
-	tree.VisitDepthChildFirst(func(node *filetree.FileNode) error {
+	tree.VisitDepthParentFirst(func(node *filetree.FileNode) error {
+		if node.Data.ViewInfo.Hidden {
+			return nil
+		}
 		fileInfo := node.Data.FileInfo
 		if fileInfo.Path == "" {
 			return nil
@@ -107,7 +105,7 @@ func analyzeFile(layer, upperLayer image.Layer) (*FileAnalysis, error) {
 		return nil
 	}, nil)
 	countDirSize(topFileAnalysis)
-	return topFileAnalysis, nil
+	return topFileAnalysis
 }
 
 func countDirSize(fileAnalysis *FileAnalysis) int64 {
@@ -124,6 +122,22 @@ func countDirSize(fileAnalysis *FileAnalysis) int64 {
 	}
 	fileAnalysis.Size = size
 	return size
+}
+
+// GetFileAnalysis get file analysis
+func GetFileAnalysis(imgAnalysis *ImageAnalysis, index int) *FileAnalysis {
+
+	cache := imgAnalysis.TreeCache
+	// 怎么聚合与比较还需要调整
+	layerCount := len(imgAnalysis.LayerAnalysisList)
+	bottomTreeStart := 0
+	bottomTreeStop := layerCount - index - 1
+
+	topTreeStart := 0
+	topTreeStop := layerCount - index - 1 - 1
+	tree := cache.Get(bottomTreeStart, bottomTreeStop, topTreeStart, topTreeStop)
+
+	return analyzeFile(tree)
 }
 
 // Analyze analyze the docker images
@@ -150,6 +164,8 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 		WastedBytes:       result.WastedBytes,
 		LayerAnalysisList: make([]*LayerAnalysis, len(result.Layers)),
 	}
+	fmt.Println(len(result.RefTrees))
+	fmt.Println(result.RefTrees[0])
 
 	// 分析生成低效数据（多个之间文件层覆盖）
 	inefficiencyAnalysisList := make([]*InefficiencyAnalysis, 0, len(result.Inefficiencies))
@@ -167,17 +183,17 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 
 	layerCount := len(result.Layers)
 	layers := make([]image.Layer, layerCount)
-	// layer的顺序为从顶至底层
+	// layer的顺序为从顶至底层（最新生成的那层为0）
 	// 保证layer的排序
 	for _, layer := range result.Layers {
 		layers[layer.Index()] = layer
 	}
 
+	cache := filetree.NewFileTreeCache(result.RefTrees)
+	cache.Build()
+	imgAnalysis.TreeCache = &cache
+
 	for index, layer := range layers {
-		var upperLayer image.Layer
-		if index < len(result.Layers)-1 {
-			upperLayer = result.Layers[index+1]
-		}
 		la := &LayerAnalysis{
 			ID:      layer.Id(),
 			ShortID: layer.ShortId(),
@@ -187,13 +203,10 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 		}
 		imgAnalysis.LayerAnalysisList[index] = la
 
-		fileAnalysis, e := analyzeFile(layer, upperLayer)
-		if e != nil {
-			err = e
-			return
-		}
-		la.FileAnalysis = fileAnalysis
 	}
-
 	return
+}
+
+func init() {
+	// Analyze("dive-test")
 }

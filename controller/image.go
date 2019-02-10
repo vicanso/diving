@@ -120,13 +120,14 @@ func (ctrl imageCtrl) getTree(c *cod.Context) (err error) {
 		err = hes.New("the image is analysising, please wait for a moment")
 		return
 	}
-	layerAnalysisList := info.Analysis.LayerAnalysisList
-	if index > len(layerAnalysisList) {
-		err = hes.New("layer no is too big")
-		return
-	}
+	c.Body = service.GetFileAnalysis(info.Analysis, index)
+	// layerAnalysisList := info.Analysis.LayerAnalysisList
+	// if index > len(layerAnalysisList) {
+	// 	err = hes.New("layer no is too big")
+	// 	return
+	// }
 
-	c.Body = layerAnalysisList[index].FileAnalysis
+	// c.Body = layerAnalysisList[index].FileAnalysis
 
 	return
 }
