@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -33,8 +32,6 @@ type (
 		Index   int    `json:"index,omitempty"`
 		Command string `json:"command,omitempty"`
 		Size    uint64 `json:"size,omitempty"`
-		// FileAnalysis analysis for file of layer
-		// FileAnalysis *FileAnalysis `json:"-"`
 	}
 	// FileAnalysis analysis info for file
 	FileAnalysis struct {
@@ -58,9 +55,11 @@ type (
 	}
 )
 
+// findOrCreateDir 查找目录或创建该目录
 func findOrCreateDir(m *FileAnalysis, pathList []string) *FileAnalysis {
 	current := m
 	for _, path := range pathList {
+		// 如果该目录为空，则创建
 		if current.Children[path] == nil {
 			current.Children[path] = &FileAnalysis{
 				IsDir:    true,
@@ -79,46 +78,76 @@ func analyzeFile(tree *filetree.FileTree) *FileAnalysis {
 		Children: make(map[string]*FileAnalysis),
 	}
 	tree.VisitDepthParentFirst(func(node *filetree.FileNode) error {
-		if node.Data.ViewInfo.Hidden {
-			return nil
-		}
 		fileInfo := node.Data.FileInfo
+		// 如果无目录信息，则跳过
 		if fileInfo.Path == "" {
 			return nil
 		}
+		// 拆分路径
 		arr := strings.SplitN(fileInfo.Path, "/", -1)
 		end := len(arr) - 1
 		m := findOrCreateDir(topFileAnalysis, arr[:end])
 		ids := strconv.Itoa(fileInfo.Uid) + ":" + strconv.Itoa(fileInfo.Gid)
+		diffType := node.Data.DiffType
+		mode := fileInfo.Mode.String()
+		// 如果是目录，则添加相应的属性
 		if fileInfo.IsDir {
-			m.Mode = fileInfo.Mode.String()
+			m.Mode = mode
 			m.IDS = ids
+			m.DiffType = diffType
 			return nil
 		}
+		// 添加子文件至目录
 		m.Children[arr[len(arr)-1]] = &FileAnalysis{
 			IDS:      ids,
 			Size:     fileInfo.Size,
 			LinkName: fileInfo.Linkname,
-			Mode:     fileInfo.Mode.String(),
-			DiffType: node.Data.DiffType,
+			Mode:     mode,
+			DiffType: diffType,
 		}
 		return nil
 	}, nil)
-	countDirSize(topFileAnalysis)
+	updateDirSizeAndDiffType(topFileAnalysis)
 	return topFileAnalysis
 }
 
-func countDirSize(fileAnalysis *FileAnalysis) int64 {
+// updateDirSizeAndDiffType 计算目录的大小以及更新diff type
+func updateDirSizeAndDiffType(fileAnalysis *FileAnalysis) int64 {
 	if !fileAnalysis.IsDir {
 		return fileAnalysis.Size
 	}
 	var size int64
+	unchangedCount := 0
+	changedCount := 0
+	addedCount := 0
+	removedCount := 0
 	for _, item := range fileAnalysis.Children {
 		if item.IsDir {
-			size += countDirSize(item)
-			continue
+			size += updateDirSizeAndDiffType(item)
+		} else {
+			size += item.Size
 		}
-		size += item.Size
+		switch item.DiffType {
+		case filetree.Changed:
+			changedCount++
+		case filetree.Added:
+			addedCount++
+		case filetree.Removed:
+			removedCount++
+		default:
+			unchangedCount++
+		}
+	}
+	// 如果目录的diff type 为默认值
+	// diff type 中未处理目录新增的情况
+	if fileAnalysis.DiffType == filetree.Unchanged {
+		// 只有新增文件
+		if unchangedCount == 0 &&
+			removedCount == 0 &&
+			changedCount == 0 &&
+			addedCount != 0 {
+			fileAnalysis.DiffType = filetree.Added
+		}
 	}
 	fileAnalysis.Size = size
 	return size
@@ -128,13 +157,16 @@ func countDirSize(fileAnalysis *FileAnalysis) int64 {
 func GetFileAnalysis(imgAnalysis *ImageAnalysis, index int) *FileAnalysis {
 
 	cache := imgAnalysis.TreeCache
-	// 怎么聚合与比较还需要调整
 	layerCount := len(imgAnalysis.LayerAnalysisList)
-	bottomTreeStart := 0
-	bottomTreeStop := layerCount - index - 1
 
-	topTreeStart := 0
-	topTreeStop := layerCount - index - 1 - 1
+	layerIndex := layerCount - index - 1
+
+	// 使用的是比较模式，只与上一层的比较
+	bottomTreeStart := 0
+	topTreeStop := layerIndex
+	bottomTreeStop := layerIndex - 1
+	topTreeStart := layerIndex
+
 	tree := cache.Get(bottomTreeStart, bottomTreeStop, topTreeStart, topTreeStop)
 
 	return analyzeFile(tree)
@@ -164,8 +196,6 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 		WastedBytes:       result.WastedBytes,
 		LayerAnalysisList: make([]*LayerAnalysis, len(result.Layers)),
 	}
-	fmt.Println(len(result.RefTrees))
-	fmt.Println(result.RefTrees[0])
 
 	// 分析生成低效数据（多个之间文件层覆盖）
 	inefficiencyAnalysisList := make([]*InefficiencyAnalysis, 0, len(result.Inefficiencies))
@@ -193,6 +223,7 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 	cache.Build()
 	imgAnalysis.TreeCache = &cache
 
+	// 生成各层的相关信息
 	for index, layer := range layers {
 		la := &LayerAnalysis{
 			ID:      layer.Id(),
@@ -202,11 +233,6 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 			Size:    layer.Size(),
 		}
 		imgAnalysis.LayerAnalysisList[index] = la
-
 	}
 	return
-}
-
-func init() {
-	// Analyze("dive-test")
 }

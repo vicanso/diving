@@ -1,40 +1,40 @@
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
-import { withStyles } from '@material-ui/core/styles';
+import React, { Component } from "react";
+import PropTypes from "prop-types";
+import { withStyles } from "@material-ui/core/styles";
 
-import Paper from '@material-ui/core/Paper';
-import InputBase from '@material-ui/core/InputBase';
-import Divider from '@material-ui/core/Divider';
-import IconButton from '@material-ui/core/IconButton';
-import MenuIcon from '@material-ui/icons/Menu';
-import SearchIcon from '@material-ui/icons/Search';
-import CloseIcon from '@material-ui/icons/Close'
+import Paper from "@material-ui/core/Paper";
+import InputBase from "@material-ui/core/InputBase";
+import Divider from "@material-ui/core/Divider";
+import IconButton from "@material-ui/core/IconButton";
+import MenuIcon from "@material-ui/icons/Menu";
+import SearchIcon from "@material-ui/icons/Search";
+import CloseIcon from "@material-ui/icons/Close";
 
 const styles = {
   root: {
-    padding: '2px 4px',
-    display: 'flex',
-    alignItems: 'center',
-    width: 600,
+    padding: "2px 4px",
+    display: "flex",
+    alignItems: "center",
+    width: 600
   },
   input: {
     marginLeft: 8,
-    flex: 1,
+    flex: 1
   },
   iconButton: {
-    padding: 10,
+    padding: 10
   },
   divider: {
     width: 1,
     height: 28,
-    margin: 4,
-  },
+    margin: 4
+  }
 };
 
 class CustomizedInputBase extends Component {
   state = {
-    image: "",
-  }
+    image: ""
+  };
   onSearch() {
     const { onSearch } = this.props;
     onSearch(this.state.image);
@@ -47,22 +47,25 @@ class CustomizedInputBase extends Component {
           <MenuIcon />
         </IconButton>
         <InputBase
+          autoFocus
           className={classes.input}
           placeholder="Input the name of image"
           value={this.state.image}
-          onKeyUp={(e) => {
+          onKeyUp={e => {
             if (e.keyCode === 0x0d) {
-              this.onSearch()
+              this.onSearch();
             }
           }}
-          onChange={(e) => this.setState({image: e.target.value})}
+          onChange={e => this.setState({ image: e.target.value })}
         />
         <IconButton
           className={classes.iconButton}
           aria-label="Clear"
-          onClick={() => this.setState({
-            image: '',
-          })}
+          onClick={() =>
+            this.setState({
+              image: ""
+            })
+          }
         >
           <CloseIcon />
         </IconButton>
@@ -82,7 +85,7 @@ class CustomizedInputBase extends Component {
 
 CustomizedInputBase.propTypes = {
   classes: PropTypes.object.isRequired,
-  onSearch: PropTypes.func.isRequired,
+  onSearch: PropTypes.func.isRequired
 };
 
 // 镜像搜索输入

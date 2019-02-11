@@ -1,16 +1,27 @@
 .diving {
-  background-color: #282c34;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  background-color: #f7f7f6;
   color: white;
   font-size: 14px;
 }
 
+.diving-paper {
+  margin: 10px 5px;
+  padding: 5px;
+  overflow-x: auto;
+  color: #333;
+}
+
+.diving-main {
+  min-height: 65vh;
+  background-color: #373e5d;
+}
 .diving-search {
   position: fixed;
   top: 50%;
+  left: 50%;
+  width: 610px;
+  margin-left: -305px;
   margin-top: -60px;
 }
 
@@ -18,13 +29,6 @@
   text-align: center;
   font-size: 18px;
   font-weight: 600;
-}
-
-.diving-infos {
-  margin: 5px;
-  padding: 5px;
-  overflow-x: auto;
-  color: #333;
 }
 
 .diving-infos table tbody tr:nth-child(2n + 1) {
@@ -51,8 +55,10 @@
   margin-left: 5px;
 }
 
-.diving-file-tree {
-  padding: 10px;
+.diving-control {
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0 10px 15px 10px;
+  margin-bottom: 10px;
 }
 
 .diving-file-tree-item {

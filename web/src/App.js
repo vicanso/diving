@@ -1,8 +1,8 @@
-import React, { Component } from 'react';
-import './App.css';
-import ImageSearch from './ImageSearch';
-import LinearProgress from '@material-ui/core/LinearProgress';
-import axios from 'axios';
+import React, { Component } from "react";
+import "./App.css";
+import ImageSearch from "./ImageSearch";
+import LinearProgress from "@material-ui/core/LinearProgress";
+import axios from "axios";
 import {
   Grid,
   Table,
@@ -11,30 +11,39 @@ import {
   TableHead,
   TableBody,
   MenuItem,
-  Select,
-} from '@material-ui/core';
-import Paper from '@material-ui/core/Paper';
-import AppBar from '@material-ui/core/AppBar';
-import FormControl from '@material-ui/core/FormControl';
-import InputLabel from '@material-ui/core/InputLabel';
+  Checkbox,
+  FormControlLabel,
+  InputBase,
+  Select
+} from "@material-ui/core";
+import Paper from "@material-ui/core/Paper";
+import AppBar from "@material-ui/core/AppBar";
+import FormControl from "@material-ui/core/FormControl";
+import InputLabel from "@material-ui/core/InputLabel";
 
-import bytes from 'bytes';
-import CodeIcon from '@material-ui/icons/Code';
-import CloseIcon from '@material-ui/icons/Close';
-import IconButton from '@material-ui/core/IconButton'
-import BorderInnerIcon from '@material-ui/icons/BorderInner';
-import BorderClearIcon from '@material-ui/icons/BorderClear';
-import Toolbar from '@material-ui/core/Toolbar';
-import Typography from '@material-ui/core/Typography';
-import DonutLargeIcon from '@material-ui/icons/DonutLarge';
+import bytes from "bytes";
+import CodeIcon from "@material-ui/icons/Code";
+import CloseIcon from "@material-ui/icons/Close";
+import IconButton from "@material-ui/core/IconButton";
+import BorderInnerIcon from "@material-ui/icons/BorderInner";
+import BorderClearIcon from "@material-ui/icons/BorderClear";
+import Toolbar from "@material-ui/core/Toolbar";
+import Typography from "@material-ui/core/Typography";
+import DonutLargeIcon from "@material-ui/icons/DonutLarge";
 
-import Message from './Message';
+import Message from "./Message";
 
-const sizeColor = '#1a237e';
+const colors = {
+  changed: "#ff9100",
+  added: "#00e676",
+  removed: "#ff3d00",
+  size: "#1a237e",
+  default: "#333"
+};
 
 function getErrorMessage(err) {
   if (!err) {
-    return ""
+    return "";
   }
   if (err.response) {
     return err.response.data.message;
@@ -47,79 +56,79 @@ function createTitle(title, left) {
   return (
     <div
       style={{
-        lineHeight: '40px',
-        position: 'relative',
-        fontSize: '16px',
-        color: '#333',
-      }} 
+        lineHeight: "40px",
+        position: "relative",
+        fontSize: "16px",
+        color: "#333"
+      }}
     >
       <h3
         style={{
           margin: 0,
-          fontWeight: 600,
+          fontWeight: 600
         }}
-      >{title}</h3>
+      >
+        {title}
+      </h3>
       <div
         style={{
-          borderBottom: '1px solid rgba(80, 80, 80, 0.85)',
-          position: 'absolute',
+          borderBottom: "1px solid rgba(80, 80, 80, 0.85)",
+          position: "absolute",
           left: left,
           right: 0,
-          top: '50%',
-          marginTop: '1px',
+          top: "50%",
+          marginTop: "1px"
         }}
-      ></div>
+      />
     </div>
-  )
+  );
 }
 
 class App extends Component {
   state = {
-    status: '',
-    image: '',
-    detailCmdID: '',
+    status: "",
+    image: "",
+    detailCmdID: "",
     error: null,
     basicInfo: null,
     expands: [],
     expandAll: false,
+    showModifications: false,
     fileTree: null,
-    selectedLayer: '',
-  }
-  // 获取layter的文件树
+    keyword: "",
+    sizeFilter: "",
+    selectedLayer: ""
+  };
+  // 获取 layer的文件树
   async getTree(layer = 0) {
-    const {
-      image,
-    } = this.state;
+    const { image } = this.state;
     this.setState({
-      error: null,
+      error: null
     });
     try {
-      const res = await axios.get(`/api/images/tree/${image}?layer=${layer}`)
+      const res = await axios.get(`/api/images/tree/${image}?layer=${layer}`);
       this.setState({
-        fileTree: res.data,
+        fileTree: res.data
       });
     } catch (err) {
       this.setState({
-        error: err,
+        error: err
       });
     }
   }
   // 获取image的基本信息
   async getBasicInfo(name, times = 0) {
     if (!name) {
-      return
+      return;
     }
     this.setState({
-      status: 'loading',
-    })
+      status: "loading"
+    });
     try {
       if (times > 3) {
-        throw new Error('Timeout, please try again later.')
+        throw new Error("Timeout, please try again later.");
       }
-      const {
-        status,
-        data,
-      } = await axios.get(`/api/images/detail/${name}`)
+      const { status, data } = await axios.get(`/api/images/detail/${name}`);
       if (status === 202) {
         setTimeout(() => {
           this.getBasicInfo(name, times + 1);
@@ -127,24 +136,21 @@ class App extends Component {
         return;
       }
       this.setState({
-        status: '',
-        basicInfo: data,
+        status: "",
+        basicInfo: data
       });
       if (data.layerAnalysisList) {
         this.showLayer(data.layerAnalysisList[0].shortID);
       }
-      // this.getTree(1);
     } catch (err) {
       this.setState({
         error: err,
-        status: '',
+        status: ""
       });
     }
   }
   findExpandIndex(level, name) {
-    const {
-      expands,
-    } = this.state;
+    const { expands } = this.state;
     let found = -1;
     expands.forEach((item, index) => {
       if (found !== -1) {
@@ -158,46 +164,40 @@ class App extends Component {
   }
   // 切换展开的显示
   toggleExpand(level, name) {
-    const {
-      expands,
-    } = this.state;
+    const { expands } = this.state;
     const index = this.findExpandIndex(level, name);
     if (index !== -1) {
       expands.splice(index, 1);
     } else {
       expands.push({
         level,
-        name,
+        name
       });
     }
     this.setState({
-      expands,
+      expands
     });
   }
   // 是否应该展开此目录
   shouldExpand(level, name) {
-    const {
-      expandAll,
-    } = this.state;
+    const { expandAll } = this.state;
     // 如果设置全部展开
     if (expandAll) {
       return true;
     }
-    return this.findExpandIndex(level, name) !== -1
+    return this.findExpandIndex(level, name) !== -1;
   }
-  // 切换展示该layter的命令
+  // 切换展示该 layer的命令
   toggleDetailCmd(id) {
-    const {
-      detailCmdID,
-    } = this.state;
+    const { detailCmdID } = this.state;
     if (id !== detailCmdID) {
       this.setState({
-        detailCmdID: id,
+        detailCmdID: id
       });
       return;
     }
     this.setState({
-      detailCmdID: '',
+      detailCmdID: ""
     });
   }
   onSearch(image) {
@@ -205,16 +205,14 @@ class App extends Component {
       return;
     }
     this.setState({
-      image,
+      image
     });
     this.getBasicInfo(image);
   }
-  showLayer(id = '') {
-    const {
-      basicInfo,
-    } = this.state;
+  showLayer(id = "") {
+    const { basicInfo } = this.state;
     this.setState({
-      selectedLayer: id,
+      selectedLayer: id
     });
     if (!id) {
       return;
@@ -233,32 +231,100 @@ class App extends Component {
   goBack() {
     // 清除重置信息
     this.setState({
+      status: "",
+      image: "",
+      detailCmdID: "",
+      error: null,
       basicInfo: null,
-      expandAll: false,
       expands: [],
+      expandAll: false,
+      showModifications: false,
       fileTree: null,
+      keyword: "",
+      sizeFilter: "",
+      selectedLayer: ""
     });
+  }
+  getFileTree() {
+    const { keyword, fileTree, showModifications, sizeFilter } = this.state;
+    if (!fileTree) {
+      return null;
+    }
+    if (!keyword && !sizeFilter && !showModifications) {
+      return fileTree;
+    }
+    let reg = null;
+    if (keyword) {
+      reg = new RegExp(keyword, "gi");
+    }
+    let minSize = 0;
+    if (sizeFilter) {
+      minSize = bytes.parse(sizeFilter.substring(2));
+    }
+    // 判断是否符合筛选条件
+    const check = (name, item) => {
+      const { size } = item;
+      let regCheck = true;
+      let sizeCheck = true;
+      let modificationCheck = true;
+      if (reg) {
+        regCheck = reg.test(name);
+      }
+      if (minSize) {
+        sizeCheck = size >= minSize;
+      }
+      if (showModifications && !item.diffType) {
+        modificationCheck = false;
+      }
+      return regCheck && sizeCheck && modificationCheck;
+    };
+    // 复制
+    const copy = item => {
+      const clone = Object.assign({}, item);
+      delete clone.children;
+      return clone;
+    };
+    // 筛选复制可用的节点
+    const filter = (current, original) => {
+      if (!original || !original.children) {
+        return;
+      }
+      const keys = Object.keys(original.children);
+      keys.forEach(k => {
+        const originalItem = original.children[k];
+        const item = copy(originalItem);
+        if (item.isDir) {
+          filter(item, originalItem);
+        }
+        // 如果是目录，而且目录下有文件
+        if (
+          check(k, item) ||
+          (item.isDir &&
+            item.children &&
+            Object.keys(item.children).length !== 0)
+        ) {
+          current.children = current.children || {};
+          current.children[k] = item;
+        }
+      });
+    };
+    const result = copy(fileTree);
+    filter(result, fileTree);
+    return result;
   }
   // 输出layer相关信息
   renderLayerInfo() {
-    const {
-      basicInfo,
-      detailCmdID,
-    } = this.state;
+    const { basicInfo, detailCmdID } = this.state;
     const cmdLimit = 24;
-    const rows = basicInfo.layerAnalysisList.map((row) => {
+    const rows = basicInfo.layerAnalysisList.map(row => {
       let cmd = row.command;
       if (cmd.length > cmdLimit) {
-        cmd = cmd.substring(0, cmdLimit) + '...';
+        cmd = cmd.substring(0, cmdLimit) + "...";
       }
       let detailCmd = null;
       if (detailCmdID === row.id) {
         detailCmd = (
-          <Paper
-            className="diving-command"
-          >
-            {row.command}
-          </Paper>
+          <Paper className="diving-command diving-paper">{row.command}</Paper>
         );
       }
 
@@ -268,16 +334,18 @@ class App extends Component {
           <TableCell
             align="right"
             style={{
-              color: sizeColor,
+              color: colors.size
             }}
-          >{bytes.format(row.size)}</TableCell>
-          <TableCell
           >
+            {bytes.format(row.size)}
+          </TableCell>
+          <TableCell>
             <IconButton
               key="detail"
               aria-label="Code"
               style={{
-                float: 'right',
+                float: "right",
+                color: detailCmdID === row.id ? colors.size : null
               }}
               onClick={() => this.toggleDetailCmd(row.id)}
             >
@@ -287,211 +355,271 @@ class App extends Component {
             {cmd}
           </TableCell>
         </TableRow>
-      )
+      );
     });
     return (
-      <Paper className="diving-infos diving-layers">
-        {createTitle("[Layers]", '80px')}
+      <Paper className="diving-layers diving-paper">
+        {createTitle("[Layers]", "80px")}
         <Table
           style={{
-            tableLayout: 'fixed',
+            tableLayout: "fixed"
           }}
         >
-          <TableHead><TableRow>
-            <TableCell>Image ID</TableCell>
-            <TableCell
-              align="right"
-            >Size</TableCell>
-            <TableCell>Command</TableCell>
-          </TableRow></TableHead>
-          <TableBody>
-            {rows}
-          </TableBody>
+          <TableHead>
+            <TableRow>
+              <TableCell>Image ID</TableCell>
+              <TableCell align="right">Size</TableCell>
+              <TableCell>Command</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>{rows}</TableBody>
         </Table>
       </Paper>
     );
   }
   // 输出重复文件的信息
   renderInefficiency() {
-    const {
-      basicInfo,
-    } = this.state;
-    const {
-      inefficiencyAnalysisList,
-    } = basicInfo;
+    const { basicInfo } = this.state;
+    const { inefficiencyAnalysisList } = basicInfo;
     if (!inefficiencyAnalysisList || !inefficiencyAnalysisList.length) {
       return null;
     }
     const files = inefficiencyAnalysisList.slice(0);
-    files.sort((item1, item2) => {
-      return item1.cumulativeSize - item2.cumulativeSize;
-    }).reverse();
-    const rows = files.map((file) => {
+    files
+      .sort((item1, item2) => {
+        return item1.cumulativeSize - item2.cumulativeSize;
+      })
+      .reverse();
+    const rows = files.map(file => {
       const size = bytes.format(file.cumulativeSize);
       return (
         <TableRow key={file.path}>
           <TableCell>{file.path}</TableCell>
           <TableCell
             style={{
-              color: sizeColor,
+              color: colors.size
             }}
             align="right"
-          >{size}</TableCell>
-          <TableCell
-            align="right"
-          >{file.count}</TableCell>
+          >
+            {size}
+          </TableCell>
+          <TableCell align="right">{file.count}</TableCell>
         </TableRow>
       );
     });
     return (
-      <Paper className="diving-infos diving-inefficiency">
-        {createTitle("[Inefficiency]", '130px')}
+      <Paper className="diving-inefficiency diving-paper">
+        {createTitle("[Inefficiency]", "130px")}
         <Table
           style={{
-            tableLayout: 'fixed',
+            tableLayout: "fixed"
           }}
         >
           <TableHead>
             <TableRow>
               <TableCell>File</TableCell>
-              <TableCell
-                align="right"
-              >Total Space</TableCell>
-              <TableCell
-                align="right"
-              >Count</TableCell>
+              <TableCell align="right">Total Space</TableCell>
+              <TableCell align="right">Count</TableCell>
             </TableRow>
           </TableHead>
-          <TableBody>
-            {rows}
-          </TableBody>
+          <TableBody>{rows}</TableBody>
         </Table>
       </Paper>
-    )
+    );
   }
   // 输出镜像的基本信息
   renderBasicInfo() {
-    const {
-      basicInfo,
-    } = this.state;
+    const { basicInfo } = this.state;
     const efficiency = (basicInfo.efficiency * 100).toFixed(2);
     const infos = [
       {
-        desc: 'Image efficiency:',
-        value: `${efficiency}%`,
+        desc: "Image efficiency score:",
+        value: `${efficiency}%`
       },
       {
-        desc: 'Image size:',
-        value: bytes.format(basicInfo.sizeBytes),
+        desc: "Total image size:",
+        value: bytes.format(basicInfo.sizeBytes)
       },
       {
-        desc: 'User size:',
-        value: bytes.format(basicInfo.userSizeByes),
+        desc: "User size:",
+        value: bytes.format(basicInfo.userSizeByes)
       },
       {
-        desc: 'Wasted size:',
-        value: bytes.format(basicInfo.wastedBytes),
-      },
+        desc: "Wasted size:",
+        value: bytes.format(basicInfo.wastedBytes) || "0B"
+      }
     ];
     return (
-      <Grid
-        item
-        sm={6}
-      >
-        <Paper className="diving-infos diving-detail">
-          {createTitle("[Detail]", '73px')}
-          {
-            infos.map((item) => {
-              return (
-                <p
-                  key={item.desc}
+      <Grid item sm={5}>
+        <Paper className="diving-detail diving-paper">
+          {createTitle("[Detail]", "73px")}
+          {infos.map(item => {
+            return (
+              <p key={item.desc}>
+                {item.desc}
+                <span
+                  style={{
+                    color: colors.size
+                  }}
                 >
-                  {item.desc}
-                  <span
-                    style={{
-                      color: sizeColor,
-                    }}
-                  >{item.value}</span>
-                </p>
-              );
-            })
-          }
+                  {item.value}
+                </span>
+              </p>
+            );
+          })}
         </Paper>
         {this.renderLayerInfo()}
         {this.renderInefficiency()}
       </Grid>
-    )
+    );
   }
   renderFormControl() {
-    const {
-      basicInfo,
-    } = this.state;
-    const menuItems = basicInfo.layerAnalysisList.map((item) => {
+    const { basicInfo } = this.state;
+    const layerMenuItems = basicInfo.layerAnalysisList.map(item => {
       return (
-        <MenuItem
-          key={item.id}
-          value={item.shortID}
-        >
+        <MenuItem key={item.id} value={item.shortID}>
           {item.shortID}
         </MenuItem>
-      )
+      );
     });
+    const sizeMenuItems = [
+      "none",
+      ">=10KB",
+      ">=30KB",
+      ">=100KB",
+      ">=500KB",
+      ">=1MB",
+      ">=10MB"
+    ].map(item => {
+      return (
+        <MenuItem key={item} value={item}>
+          {item}
+        </MenuItem>
+      );
+    });
+    const marginLeft = "20px";
     return (
-      <form
-        className="diving-control"
-      >
+      <form className="diving-control">
         <FormControl>
-          <InputLabel 
-            htmlFor="age-customized-select"
-          >
-            Layer
-          </InputLabel>
+          <InputLabel htmlFor="layer-select">Layer</InputLabel>
           <Select
-            onChange={(e) => {
+            onChange={e => {
               this.showLayer(e.target.value);
             }}
             style={{
-              color: '#fff',
-              width: '250px',
+              width: "250px"
             }}
             value={this.state.selectedLayer}
           >
-            {menuItems} 
+            {layerMenuItems}
           </Select>
         </FormControl>
+        <FormControl>
+          <InputLabel htmlFor="size-select">Size</InputLabel>
+          <Select
+            onChange={e => {
+              let v = e.target.value;
+              if (v === "none") {
+                v = "";
+              }
+              this.setState({
+                sizeFilter: v
+              });
+            }}
+            style={{
+              marginLeft,
+              width: "100px"
+            }}
+            value={this.state.sizeFilter}
+          >
+            {sizeMenuItems}
+          </Select>
+        </FormControl>
+        <FormControl>
+          <Paper
+            elevation={1}
+            style={{
+              boxShadow: "none",
+              marginLeft,
+              borderRadius: 0,
+              borderBottom: "1px solid #999"
+            }}
+          >
+            <InputBase
+              value={this.state.keyword}
+              placeholder="Input the keyword"
+              onChange={e =>
+                this.setState({
+                  keyword: e.target.value
+                })
+              }
+            />
+            <IconButton
+              aria-label="Clear"
+              onClick={() => {
+                this.setState({
+                  keyword: ""
+                });
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Paper>
+        </FormControl>
+        <FormControl
+          style={{
+            marginLeft
+          }}
+        >
+          <FormControlLabel
+            label="Show Modifications"
+            control={
+              <Checkbox
+                checked={this.state.showModifications}
+                onChange={e => {
+                  this.setState({
+                    showModifications: !this.state.showModifications
+                  });
+                }}
+              />
+            }
+          />
+        </FormControl>
+        <FormControl
+          style={{
+            marginLeft
+          }}
+        >
+          <FormControlLabel
+            label="Expand All"
+            control={
+              <Checkbox
+                checked={this.state.expandAll}
+                onChange={e => {
+                  this.setState({
+                    expandAll: !this.state.expandAll
+                  });
+                }}
+              />
+            }
+          />
+        </FormControl>
       </form>
-    )
+    );
   }
   // 输出文件树
   renderFileTree() {
-    const {
-      fileTree,
-    } = this.state;
-    if (!fileTree) {
-      return null;
-    }
-
     const fileNodes = [];
     fileNodes.push(
-      <div
-        key={'fields'}
-        className="diving-file-tree-item"
-      >
-        <span
-          className="mode"
-        >Permission</span>
-        <span
-          className="ids"
-        >UID:GID</span>
-        <span
-          className="size"
-        >Size</span>
-        <span
-        >FileTree</span>
+      <div key={"fields"} className="diving-file-tree-item">
+        <span className="mode">Permission</span>
+        <span className="ids">UID:GID</span>
+        <span className="size">Size</span>
+        <span>FileTree</span>
       </div>
     );
     const renderFileAnalysis = (tree, prefix, level) => {
-      if (!tree.children ||tree.children.length === 0) {
+      if (!tree.children || tree.children.length === 0) {
         return null;
       }
       const keys = Object.keys(tree.children);
@@ -503,46 +631,56 @@ class App extends Component {
           name += ` → ${item.linkName}`;
         }
         let mode = item.mode;
-        if (mode && mode.charAt(0) === 'L') {
-          mode = '-' + mode.substring(1);
+        if (mode && mode.charAt(0) === "L") {
+          mode = "-" + mode.substring(1);
         }
         const hasChildren = item.children && item.children.length !== 0;
         const expanded = this.shouldExpand(level, k);
+        let fontColor = "";
+        switch (item.diffType) {
+          case 1:
+            fontColor = colors.changed;
+            break;
+          case 2:
+            fontColor = colors.added;
+            break;
+          case 3:
+            fontColor = colors.removed;
+            break;
+          default:
+            fontColor = colors.default;
+            break;
+        }
 
         fileNodes.push(
           <div
             className="diving-file-tree-item"
             key={`${prefix}-${k}`}
+            style={{
+              color: fontColor
+            }}
           >
-            <span
-              className="mode"
-            >{mode}</span>
-            <span
-              className="ids"
-            >{item.ids}</span>
-            <span
-              className="size"
-            >{size}</span>
+            <span className="mode">{mode}</span>
+            <span className="ids">{item.ids}</span>
+            <span className="size">{size}</span>
             <span
               style={{
-                textIndent: `${level*26}px`,
+                textIndent: `${level * 26}px`
               }}
             >
-              {hasChildren && <IconButton
-                style={{
-                  padding: 0,
-                  color: '#fff',
-                  marginRight: '5px',
-                }}
-                onClick={() => this.toggleExpand(level, name)}
-              >
-                {!expanded && <BorderInnerIcon
-                  fontSize="small"
-                />}
-                {expanded &&<BorderClearIcon
-                  fontSize="small"
-                />}
-              </IconButton>}
+              {hasChildren && (
+                <IconButton
+                  style={{
+                    padding: 0,
+                    color: fontColor,
+                    marginRight: "5px"
+                  }}
+                  onClick={() => this.toggleExpand(level, name)}
+                >
+                  {!expanded && <BorderInnerIcon fontSize="small" />}
+                  {expanded && <BorderClearIcon fontSize="small" />}
+                </IconButton>
+              )}
               {name}
             </span>
           </div>
@@ -552,108 +690,118 @@ class App extends Component {
         }
       });
     };
-    renderFileAnalysis(fileTree, "root", 0)
+    const fileTree = this.getFileTree();
+    if (!fileTree) {
+      return null;
+    }
+    renderFileAnalysis(fileTree, "root", 0);
     return (
-      <Grid
-        item
-        sm={6}
-        className="diving-file-tree"
-      >
-        {this.renderFormControl()} 
-        {fileNodes}
+      <Grid item sm={7}>
+        <Paper className="diving-file-tree diving-paper">
+          {createTitle("[Current Layer Contents]", "235px")}
+          {this.renderFormControl()}
+          {fileNodes}
+        </Paper>
       </Grid>
-    )
+    );
   }
   renderResult() {
-    const {
-      basicInfo,
-      image,
-    } = this.state;
+    const { basicInfo, image } = this.state;
     if (!basicInfo) {
       return null;
     }
     return (
       <div>
-      <AppBar
-        position="static"
-        className="diving-app-bar"
-      >
-        <Toolbar variant="dense">
-          <Typography
-            variant="h6"
-            color="inherit"
+        <AppBar
+          style={{
+            backgroundColor: "#373e5d"
+          }}
+          position="static"
+          className="diving-app-bar"
+        >
+          <Toolbar
+            variant="dense"
             style={{
-              width: '100%',
+              padding: 0
             }}
           >
+            <Typography
+              variant="h6"
+              color="inherit"
+              style={{
+                width: "100%"
+              }}
+            >
+              <IconButton color="inherit" aria-label="DonutLarge">
+                <DonutLargeIcon />
+              </IconButton>
+              {image}
+            </Typography>
             <IconButton
               color="inherit"
-              aria-label="DonutLarge"
+              aria-label="Close"
+              onClick={() => this.goBack()}
             >
-              <DonutLargeIcon />
+              <CloseIcon />
             </IconButton>
-            {image.toUpperCase()}
-          </Typography>
-          <IconButton
-            color="inherit"
-            aria-label="Close"
-            onClick={() => this.goBack()}
-          >
-            <CloseIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
-        <Grid container spacing={0}
-          className="diving-grid"
-        >
+          </Toolbar>
+        </AppBar>
+        <Grid container spacing={0} className="diving-grid">
           {this.renderBasicInfo()}
           {this.renderFileTree()}
         </Grid>
       </div>
-    )
+    );
   }
   renderError() {
-    const {
-      error,
-    } = this.state;
+    const { error } = this.state;
     if (!error) {
       return null;
     }
-    return (
-      <Message
-        variant={"error"}
-        message={getErrorMessage(error)}
-      />
-    )
+    return <Message variant={"error"} message={getErrorMessage(error)} />;
   }
   renderSearch() {
-    const {
-      status,
-      basicInfo,
-    } = this.state
+    const { status, basicInfo } = this.state;
     if (basicInfo) {
       return null;
     }
     let loadingTips = null;
-    
-    if (status === 'loading') {
-      loadingTips = (<div>
-        <p
-          className="diving-loading-tips"
-        > Loading...</p>
-        <LinearProgress /> 
-      </div>)
+
+    if (status === "loading") {
+      loadingTips = (
+        <div>
+          <p className="diving-loading-tips"> Loading...</p>
+          <LinearProgress />
+        </div>
+      );
     }
     return (
-      <div className="diving-search">
-        <div>
-          <ImageSearch
-            onSearch={(name) => this.onSearch(name.trim())}
-          />
-          { loadingTips }
+      <div className="diving-main">
+        <a
+          style={{
+            position: "absolute",
+            width: "25px",
+            height: "25px",
+            overflow: "hidden",
+            padding: "15px",
+            right: 0
+          }}
+          href="https://github.com/vicanso/diving"
+        >
+          <svg
+            style={{
+              fill: "#fff"
+            }}
+          >
+            <path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z" />
+          </svg>
+        </a>
+        <div className="diving-search">
+          <ImageSearch onSearch={name => this.onSearch(name.trim())} />
+          {loadingTips}
         </div>
       </div>
-    )
+    );
   }
   render() {
     return (

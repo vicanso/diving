@@ -13,6 +13,7 @@
     "react-scripts": "2.1.3"
   },
   "scripts": {
+    "format": "node node_modules/.bin/prettier --write *.js */**.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -26,5 +27,8 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "devDependencies": {
+    "prettier": "^1.16.4"
+  }
 }

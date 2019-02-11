@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/vicanso/cod"
@@ -23,18 +24,24 @@ const (
 	analysisDone
 )
 
+const (
+	// imageInfoTTL ttl for image info
+	imageInfoTTL = 60 * 10
+)
+
 type (
 	// imageCtrl image ctrl
 	imageCtrl struct{}
 	imageInfo struct {
-		Status   int
-		Err      error
-		Analysis *service.ImageAnalysis
+		CreatedAt int64
+		Status    int
+		Err       error
+		Analysis  *service.ImageAnalysis
 	}
 )
 
 func init() {
-	c, err := lru.New(1024)
+	c, err := lru.New(32)
 	if err != nil {
 		panic(err)
 	}
@@ -52,8 +59,9 @@ func doAnalyze(name string) {
 	analysis, err := service.Analyze(name)
 	if err != nil {
 		imageInfoCache.Add(name, &imageInfo{
-			Status: analysisFail,
-			Err:    err,
+			CreatedAt: time.Now().Unix(),
+			Status:    analysisFail,
+			Err:       err,
 		})
 		logger.Error("analyze fail",
 			zap.String("name", name),
@@ -62,8 +70,9 @@ func doAnalyze(name string) {
 		return
 	}
 	imageInfoCache.Add(name, &imageInfo{
-		Status:   analysisDone,
-		Analysis: analysis,
+		CreatedAt: time.Now().Unix(),
+		Status:    analysisDone,
+		Analysis:  analysis,
 	})
 }
 
@@ -72,14 +81,19 @@ func (ctrl imageCtrl) getBasicInfo(c *cod.Context) (err error) {
 	name := c.Param("name")[1:]
 	var info *imageInfo
 	v, ok := imageInfoCache.Get(name)
-	if !ok {
+	if ok {
+		info = v.(*imageInfo)
+		// 如果已过期
+		if info.CreatedAt+imageInfoTTL < time.Now().Unix() {
+			info = nil
+		}
+	}
+	if info == nil {
 		info = &imageInfo{
 			Status: analysisDoing,
 		}
 		imageInfoCache.Add(name, info)
 		go doAnalyze(name)
-	} else {
-		info = v.(*imageInfo)
 	}
 	// 如果正在处理中，则直接返回
 	if info.Status == analysisDoing {
@@ -98,20 +112,24 @@ func (ctrl imageCtrl) getBasicInfo(c *cod.Context) (err error) {
 }
 
 func (ctrl imageCtrl) getTree(c *cod.Context) (err error) {
-	index, e := strconv.Atoi(c.QueryParam("layer"))
+	layer := c.QueryParam("layer")
+	if layer == "" {
+		err = hes.New("layer can not be null")
+		return
+	}
+	index, e := strconv.Atoi(layer)
 	if e != nil {
 		err = hes.NewWithErrorStatusCode(e, http.StatusBadRequest)
 		return
 	}
 
 	name := c.Param("name")[1:]
-	var info *imageInfo
 	v, ok := imageInfoCache.Get(name)
 	if !ok {
 		err = hes.New("can not get tree of image")
 		return
 	}
-	info = v.(*imageInfo)
+	info := v.(*imageInfo)
 	if info.Err != nil {
 		err = info.Err
 		return
@@ -120,14 +138,14 @@ func (ctrl imageCtrl) getTree(c *cod.Context) (err error) {
 		err = hes.New("the image is analysising, please wait for a moment")
 		return
 	}
+	if index >= len(info.Analysis.LayerAnalysisList) {
+		err = hes.New("the layer index is too big")
+		return
+	}
+	if !service.IsDev() {
+		c.CacheMaxAge("5m")
+	}
+
 	c.Body = service.GetFileAnalysis(info.Analysis, index)
-	// layerAnalysisList := info.Analysis.LayerAnalysisList
-	// if index > len(layerAnalysisList) {
-	// 	err = hes.New("layer no is too big")
-	// 	return
-	// }
-
-	// c.Body = layerAnalysisList[index].FileAnalysis
-
 	return
 }
