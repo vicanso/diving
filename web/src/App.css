@@ -31,8 +31,8 @@
   font-weight: 600;
 }
 
-.diving-infos table tbody tr:nth-child(2n + 1) {
-  background-color: #fafafa;
+.diving-paper table tbody tr:nth-child(2n + 1) {
+  background-color: #f7f7f6;
 }
 
 .diving-command {
@@ -64,6 +64,11 @@
 .diving-file-tree-item {
   font-size: 16px;
 }
+
+.diving-file-tree-item:nth-child(2n) {
+  background-color: #f7f7f6;
+}
+
 .diving-file-tree-item > span {
   display: inline-block;
   line-height: 26px;

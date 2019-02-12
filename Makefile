@@ -21,4 +21,4 @@ bench:
 	go test -bench=. ./...
 
 build:
-	go build -tags netgo -o diving 
+	go build -o diving 

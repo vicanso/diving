@@ -61,6 +61,15 @@ func main() {
 
 	d := cod.New()
 
+	// 如果出错则会触发此回调（在 ErrorHandler 中会将出错转换为相应的http响应，此类情况不会触发）
+	d.OnError(func(c *cod.Context, err error) {
+		// 可以针对实际场景输出更多的日志信息
+		logger.DPanic("exception",
+			zap.String("uri", c.Request.RequestURI),
+			zap.Error(err),
+		)
+	})
+
 	d.Use(middleware.NewRecover())
 
 	d.Use(middleware.NewStats(middleware.StatsConfig{
