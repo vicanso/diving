@@ -1,0 +1,18 @@
+language: go
+sudo: required
+
+go:
+  - "1.11"
+
+script:
+  - env GO111MODULE=on make test
+
+after_success:
+  - export VERSION=$(date -u +%Y%m%d%H%M%S)
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker build -t diving .
+  - docker tag diving $DOCKER_USERNAMEdiving/
+  - docker tag pike $DOCKER_USERNAME/diving:$VERSION
+  - docker push $DOCKER_USERNAMEdiving/
+  - docker push $DOCKER_USERNAME/diving:$VERSION
+  - docker images
