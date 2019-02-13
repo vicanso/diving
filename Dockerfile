@@ -1,7 +1,7 @@
 FROM golang:1.11 as builder
 
-RUN apk update \
-  && apk add git make gcc \
+RUN apt-get update \
+  && apt-get install -y git make gcc \
   && git clone --depth=1 https://github.com/vicanso/diving.git /diving \
   && cd /diving \
   && make build
