@@ -1,9 +1,9 @@
 # diving
 
-Using diving you can analyze docker image on the website. It use [dive](https://github.com/wagoodman/dive) to get the analyze information.
+Using diving you can analyze docker image on the website. It use [dive](https://github.com/wagoodman/dive) to get the analyzed information.
 
 
-The first time may be slow, because it should pull the image first.
+The first time may be slow, because it pulls the image first.
 
 ![Image](.data/demo.gif)
 
