@@ -1,4 +1,4 @@
-FROM golang:1.11.5 as builder
+FROM golang:1.11.1 as builder
 
 RUN git clone --depth=1 https://github.com/vicanso/diving.git /diving \
   && cd /diving \
