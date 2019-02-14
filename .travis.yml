@@ -8,11 +8,8 @@ script:
   # - env GO111MODULE=on make test
 
 # after_success:
-  - export VERSION=$(date -u +%Y%m%d%H%M%S)
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - docker build -t diving .
   - docker tag diving $DOCKER_USERNAME/diving
-  - docker tag pike $DOCKER_USERNAME/diving:$VERSION
   - docker push $DOCKER_USERNAME/diving
-  - docker push $DOCKER_USERNAME/diving:$VERSION
   - docker images
