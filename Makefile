@@ -1,4 +1,4 @@
-.PHONY: default test test-cover dev
+.PHONY: default test test-cover dev build
 
 # for dev
 dev:

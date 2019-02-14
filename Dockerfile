@@ -1,10 +1,8 @@
 FROM golang:1.11 as builder
 
-RUN apt-get update \
-  && apt-get install -y git make gcc cmake \
-  && git clone --depth=1 https://github.com/vicanso/diving.git /diving \
+RUN git clone --depth=1 https://github.com/vicanso/diving.git /diving \
   && cd /diving \
-  && make build
+  && go build -o diving 
 
 FROM ubuntu 
 
