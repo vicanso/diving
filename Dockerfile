@@ -6,13 +6,16 @@ RUN apk update \
   && cd /diving \
   && go build -tags netgo -o diving 
 
-FROM ubuntu 
+FROM alpine 
 
 EXPOSE 7001
 
-COPY --from=builder -L /usr/lib/libltdl.so* /usr/lib/
+COPY --from=builder /usr/lib/libltdl.so.7.3.1 /usr/lib/
 COPY --from=builder /usr/bin/docker /usr/bin/docker
 COPY --from=builder /diving/diving /usr/local/bin/diving
+
+RUN ln -s /usr/lib/libltdl.so.7.3.1 /usr/lib/libltdl.so.7 \
+  && ln -s /usr/lib/libltdl.so.7.3.1 /usr/lib/libltdl.so
 
 CMD ["diving"]
 
