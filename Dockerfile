@@ -1,6 +1,6 @@
 FROM golang:1.11-alpine as builder
 
-RUN apk updte \
+RUN apk update \
   && apk add docker git \
   && git clone --depth=1 https://github.com/vicanso/diving.git /diving \
   && cd /diving \
