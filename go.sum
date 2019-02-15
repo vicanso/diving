@@ -358,6 +358,8 @@ github.com/unrolled/secure v0.0.0-20180918153822-f340ee86eb8b/go.mod h1:mnPT77IA
 github.com/unrolled/secure v0.0.0-20181005190816-ff9db2ff917f/go.mod h1:mnPT77IAdsi/kV7+Es7y+pXALeV3h7G6dQF6mNYjcLA=
 github.com/vicanso/cod v0.0.0-20190212130127-290ab5016df4 h1:9EY4xVSO1U2kZiNZ/+7FaVts2L/fzsR679n3KIlRf+c=
 github.com/vicanso/cod v0.0.0-20190212130127-290ab5016df4/go.mod h1:rT7/7/1miipLx9bQSj3OQs3Lwi/8+XtkAmXQHtfMWLY=
+github.com/vicanso/cod v0.0.0-20190215134953-28900cdbd748 h1:mwi0oDF0TeuQY5FekfG+zQvFg+Se/77AI7XY85Q5Aso=
+github.com/vicanso/cod v0.0.0-20190215134953-28900cdbd748/go.mod h1:rT7/7/1miipLx9bQSj3OQs3Lwi/8+XtkAmXQHtfMWLY=
 github.com/vicanso/fresh v0.1.1 h1:L3UX/g2uZ4pNFzjc7+PyeYOlIAs2/yUfhcFnK7E+JQU=
 github.com/vicanso/fresh v0.1.1/go.mod h1:gr1RKSFxQ1OnQHzUMBHCigifni7KrXveJjWCTlPjICA=
 github.com/vicanso/hes v0.1.3 h1:3txPJL+J+xBRhIotkK3XKNbmBz+JXJ1knmGM0L+Qe4k=
