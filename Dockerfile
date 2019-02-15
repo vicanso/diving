@@ -1,4 +1,4 @@
-FROM golang:1.11-alpine as builder
+FROM golang:1.11.1-alpine as builder
 
 RUN apk update \
   && apk add docker git \
