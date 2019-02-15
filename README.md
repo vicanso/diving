@@ -11,7 +11,7 @@ The first time may be slow, because it pulls the image first.
 ## Installation
 
 ```
-docker -d --restart=always \
+docker run -d --restart=always \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -p 7001:7001 \
   vicanso/diving

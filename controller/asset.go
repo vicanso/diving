@@ -36,7 +36,7 @@ func (sf *staticFile) Stat(file string) os.FileInfo {
 func init() {
 	g := router.NewGroup("")
 	ctrl := assetCtrl{}
-	g.GET("/", ctrl.index)
+	g.GET("/", noQuery, ctrl.index)
 	g.GET("/favicon.ico", ctrl.favIcon)
 
 	sf := &staticFile{
@@ -63,6 +63,7 @@ func sendFile(c *cod.Context, file string) (err error) {
 }
 
 func (ctrl assetCtrl) index(c *cod.Context) (err error) {
+	c.CacheMaxAge("10s")
 	return sendFile(c, "index.html")
 }
 
