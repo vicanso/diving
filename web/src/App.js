@@ -147,6 +147,9 @@ class App extends Component {
         return;
       }
       this.setState({
+        // 不能在finally中设置状态，
+        // 因为会循环的去查询
+        status: "",
         basicInfo: data
       });
       if (data.layerAnalysisList) {
@@ -154,12 +157,9 @@ class App extends Component {
       }
     } catch (err) {
       this.setState({
+        status: "",
         error: err,
       });
-    } finally {
-      this.setState({
-        status: "",
-      })
     }
   }
   findExpandIndex(level, name) {
