@@ -59,6 +59,25 @@
   border-bottom: 1px solid #e0e0e0;
   padding: 0 10px 15px 10px;
   margin-bottom: 10px;
+  position: relative;
+}
+
+.diving-control-tooltip {
+  position: absolute;
+  right: 0;
+  top: -10px;
+}
+
+.diving-control-tooltip-colors {
+  margin: 0;
+  padding: 0;
+}
+
+.diving-control-tooltip-colors li {
+  list-style: none;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .diving-file-tree-item {

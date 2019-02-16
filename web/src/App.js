@@ -14,6 +14,7 @@ import {
   Checkbox,
   FormControlLabel,
   InputBase,
+  Tooltip,
   Select
 } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
@@ -24,6 +25,7 @@ import InputLabel from "@material-ui/core/InputLabel";
 import bytes from "bytes";
 import CodeIcon from "@material-ui/icons/Code";
 import CloseIcon from "@material-ui/icons/Close";
+import HelpIcon from "@material-ui/icons/Help";
 import IconButton from "@material-ui/core/IconButton";
 import BorderInnerIcon from "@material-ui/icons/BorderInner";
 import BorderClearIcon from "@material-ui/icons/BorderClear";
@@ -40,6 +42,8 @@ const colors = {
   size: "#1a237e",
   default: "#333"
 };
+
+const loadingStatus = "loading";
 
 function getErrorMessage(err) {
   if (!err) {
@@ -97,6 +101,7 @@ class App extends Component {
     fileTree: null,
     keyword: "",
     sizeFilter: "",
+    getTreeStatus: "",
     selectedLayer: ""
   };
   // 获取 layer的文件树
@@ -104,7 +109,8 @@ class App extends Component {
     const { image } = this.state;
     this.setState({
       fileTree: null,
-      error: null
+      error: null,
+      getTreeStatus: loadingStatus,
     });
     try {
       const res = await axios.get(`/api/images/tree/${image}?layer=${layer}`);
@@ -115,6 +121,10 @@ class App extends Component {
       this.setState({
         error: err
       });
+    } finally {
+      this.setState({
+        getTreeStatus: "",
+      })
     }
   }
   // 获取image的基本信息
@@ -123,7 +133,7 @@ class App extends Component {
       return;
     }
     this.setState({
-      status: "loading"
+      status: loadingStatus
     });
     try {
       if (times > 3) {
@@ -137,7 +147,6 @@ class App extends Component {
         return;
       }
       this.setState({
-        status: "",
         basicInfo: data
       });
       if (data.layerAnalysisList) {
@@ -146,8 +155,11 @@ class App extends Component {
     } catch (err) {
       this.setState({
         error: err,
-        status: ""
       });
+    } finally {
+      this.setState({
+        status: "",
+      })
     }
   }
   findExpandIndex(level, name) {
@@ -501,6 +513,36 @@ class App extends Component {
     const marginLeft = "20px";
     return (
       <form className="diving-control">
+        <Tooltip
+          className="diving-control-tooltip"
+          title={
+            <React.Fragment>
+              <ul
+                className="diving-control-tooltip-colors"
+              >
+                <li
+                  style={{
+                    color: colors.added,
+                  }}
+                >Added Path</li>
+                <li
+                  style={{
+                    color: colors.changed,
+                  }}
+                >Changed Path</li>
+                <li
+                  style={{
+                    color: colors.removed,
+                  }}
+                >Removed Path</li>
+              </ul>
+            </React.Fragment>
+          }
+        >
+          <HelpIcon
+            color="action"
+          />
+        </Tooltip>
         <FormControl>
           <InputLabel htmlFor="layer-select">Layer</InputLabel>
           <Select
@@ -610,6 +652,9 @@ class App extends Component {
   }
   // 输出文件树
   renderFileTree() {
+    const {
+      getTreeStatus,
+    } = this.state;
     const fileNodes = [];
     fileNodes.push(
       <div key={"fields"} className="diving-file-tree-item">
@@ -693,11 +738,21 @@ class App extends Component {
     };
     const fileTree = this.getFileTree();
     let loading = null;
-    if (fileTree) {
+    if (getTreeStatus === loadingStatus) {
+      loading = this.getLoading();
+    } else if (fileTree) {
       renderFileAnalysis(fileTree, "root", 0);
     } else {
-      loading = this.getLoading();
-    }
+      loading = (
+        <p
+          style={{
+            textAlign: 'center'
+          }}
+        >
+          Get file tree of layer fail
+        </p>
+      );
+    } 
     return (
       <Grid item sm={7}>
         <Paper className="diving-file-tree diving-paper">
@@ -787,7 +842,7 @@ class App extends Component {
     }
     let loadingTips = null;
 
-    if (status === "loading") {
+    if (status === loadingStatus) {
       loadingTips = this.getLoading();
     }
     return (
