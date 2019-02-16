@@ -103,6 +103,7 @@ class App extends Component {
   async getTree(layer = 0) {
     const { image } = this.state;
     this.setState({
+      fileTree: null,
       error: null
     });
     try {
@@ -691,16 +692,19 @@ class App extends Component {
       });
     };
     const fileTree = this.getFileTree();
-    if (!fileTree) {
-      return null;
+    let loading = null;
+    if (fileTree) {
+      renderFileAnalysis(fileTree, "root", 0);
+    } else {
+      loading = this.getLoading();
     }
-    renderFileAnalysis(fileTree, "root", 0);
     return (
       <Grid item sm={7}>
         <Paper className="diving-file-tree diving-paper">
           {createTitle("[Current Layer Contents]", "235px")}
           {this.renderFormControl()}
           {fileNodes}
+          {loading}
         </Paper>
       </Grid>
     );
@@ -755,10 +759,26 @@ class App extends Component {
   }
   renderError() {
     const { error } = this.state;
-    if (!error) {
-      return null;
-    }
-    return <Message variant={"error"} message={getErrorMessage(error)} />;
+    const message = getErrorMessage(error);
+    return (
+      <Message
+        variant={"error"}
+        message={message}
+        onClose={() => {
+          this.setState({
+            error: null
+          });
+        }}
+      />
+    );
+  }
+  getLoading() {
+    return (
+      <div>
+        <p className="diving-loading-tips"> Loading...</p>
+        <LinearProgress />
+      </div>
+    );
   }
   renderSearch() {
     const { status, basicInfo } = this.state;
@@ -768,12 +788,7 @@ class App extends Component {
     let loadingTips = null;
 
     if (status === "loading") {
-      loadingTips = (
-        <div>
-          <p className="diving-loading-tips"> Loading...</p>
-          <LinearProgress />
-        </div>
-      );
+      loadingTips = this.getLoading();
     }
     return (
       <div className="diving-main">

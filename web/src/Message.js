@@ -94,24 +94,10 @@ const styles2 = theme => ({
 
 class Message extends React.Component {
   state = {
-    open: true
+    open: false
   };
-
-  handleClick = () => {
-    this.setState({ open: true });
-  };
-
-  handleClose = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
-
-    this.setState({ open: false });
-  };
-
   render() {
-    const { variant, message } = this.props;
-
+    const { variant, message, onClose } = this.props;
     return (
       <div>
         <Snackbar
@@ -119,12 +105,12 @@ class Message extends React.Component {
             vertical: "top",
             horizontal: "right"
           }}
-          open={this.state.open}
+          open={message !== ""}
+          onClose={onClose}
           autoHideDuration={6000}
-          onClose={this.handleClose}
         >
           <MySnackbarContentWrapper
-            onClose={this.handleClose}
+            onClose={onClose}
             variant={variant}
             message={message}
           />
@@ -136,7 +122,8 @@ class Message extends React.Component {
 
 Message.propTypes = {
   variant: PropTypes.oneOf(["success", "warning", "error", "info"]).isRequired,
-  message: PropTypes.string.isRequired
+  message: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired
 };
 
 export default withStyles(styles2)(Message);
