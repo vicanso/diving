@@ -268,7 +268,11 @@ class App extends Component {
     }
     let reg = null;
     if (keyword) {
-      reg = new RegExp(keyword, "gi");
+      try {
+        reg = new RegExp(keyword, "gi");
+      } catch (err) {
+        console.error(err);
+      }
     }
     let minSize = 0;
     if (sizeFilter) {
@@ -590,7 +594,7 @@ class App extends Component {
           >
             <InputBase
               value={this.state.keyword}
-              placeholder="Input the keyword"
+              placeholder="Keyword(RegExp)"
               onChange={e =>
                 this.setState({
                   keyword: e.target.value
