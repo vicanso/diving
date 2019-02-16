@@ -32,6 +32,7 @@ import BorderClearIcon from "@material-ui/icons/BorderClear";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
 import DonutLargeIcon from "@material-ui/icons/DonutLarge";
+import TimelapseIcon from "@material-ui/icons/Timelapse";
 
 import Message from "./Message";
 
@@ -110,7 +111,7 @@ class App extends Component {
     this.setState({
       fileTree: null,
       error: null,
-      getTreeStatus: loadingStatus,
+      getTreeStatus: loadingStatus
     });
     try {
       const res = await axios.get(`/api/images/tree/${image}?layer=${layer}`);
@@ -123,8 +124,8 @@ class App extends Component {
       });
     } finally {
       this.setState({
-        getTreeStatus: "",
-      })
+        getTreeStatus: ""
+      });
     }
   }
   // 获取image的基本信息
@@ -158,7 +159,7 @@ class App extends Component {
     } catch (err) {
       this.setState({
         status: "",
-        error: err,
+        error: err
       });
     }
   }
@@ -490,7 +491,7 @@ class App extends Component {
       </Grid>
     );
   }
-  renderFormControl() {
+  renderFormControl(totalSizeOfFile) {
     const { basicInfo } = this.state;
     const layerMenuItems = basicInfo.layerAnalysisList.map(item => {
       return (
@@ -515,38 +516,63 @@ class App extends Component {
       );
     });
     const marginLeft = "20px";
+    const sizeTips = `Total size of files: ${bytes.format(totalSizeOfFile)}`;
     return (
       <form className="diving-control">
-        <Tooltip
-          className="diving-control-tooltip"
-          title={
-            <React.Fragment>
-              <ul
-                className="diving-control-tooltip-colors"
-              >
-                <li
+        <div className="diving-control-tooltip">
+          <Tooltip
+            title={
+              <React.Fragment>
+                <p
                   style={{
-                    color: colors.added,
+                    fontWeight: 600,
+                    fontSize: "14px"
                   }}
-                >Added Path</li>
-                <li
-                  style={{
-                    color: colors.changed,
-                  }}
-                >Changed Path</li>
-                <li
-                  style={{
-                    color: colors.removed,
-                  }}
-                >Removed Path</li>
-              </ul>
-            </React.Fragment>
-          }
-        >
-          <HelpIcon
-            color="action"
-          />
-        </Tooltip>
+                >
+                  {sizeTips}
+                </p>
+              </React.Fragment>
+            }
+          >
+            <TimelapseIcon
+              color="action"
+              style={{
+                marginRight: "5px"
+              }}
+            />
+          </Tooltip>
+          <Tooltip
+            title={
+              <React.Fragment>
+                <ul className="diving-control-tooltip-colors">
+                  <li
+                    style={{
+                      color: colors.added
+                    }}
+                  >
+                    Added Path
+                  </li>
+                  <li
+                    style={{
+                      color: colors.changed
+                    }}
+                  >
+                    Changed Path
+                  </li>
+                  <li
+                    style={{
+                      color: colors.removed
+                    }}
+                  >
+                    Removed Path
+                  </li>
+                </ul>
+              </React.Fragment>
+            }
+          >
+            <HelpIcon color="action" />
+          </Tooltip>
+        </div>
         <FormControl>
           <InputLabel htmlFor="layer-select">Layer</InputLabel>
           <Select
@@ -656,10 +682,9 @@ class App extends Component {
   }
   // 输出文件树
   renderFileTree() {
-    const {
-      getTreeStatus,
-    } = this.state;
+    const { getTreeStatus } = this.state;
     const fileNodes = [];
+    let totalSizeOfFile = 0;
     fileNodes.push(
       <div key={"fields"} className="diving-file-tree-item">
         <span className="mode">Permission</span>
@@ -677,6 +702,10 @@ class App extends Component {
         const item = tree.children[k];
         const size = bytes.format(item.size);
         let name = k;
+        // 非目录非软链接
+        if (!item.isDir && !item.linkName && item.size) {
+          totalSizeOfFile += item.size;
+        }
         if (item.linkName) {
           name += ` → ${item.linkName}`;
         }
@@ -750,18 +779,18 @@ class App extends Component {
       loading = (
         <p
           style={{
-            textAlign: 'center'
+            textAlign: "center"
           }}
         >
           Get file tree of layer fail
         </p>
       );
-    } 
+    }
     return (
       <Grid item sm={7}>
         <Paper className="diving-file-tree diving-paper">
           {createTitle("[Current Layer Contents]", "235px")}
-          {this.renderFormControl()}
+          {this.renderFormControl(totalSizeOfFile)}
           {fileNodes}
           {loading}
         </Paper>
