@@ -22,7 +22,7 @@ bench:
 
 build:
 	packr2
-	go build -o diving 
+	go build -tags netgo -o diving
 
 clean:
 	packr2 clean
