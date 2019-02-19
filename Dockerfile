@@ -1,11 +1,22 @@
-FROM golang:1.11.1-alpine as builder
+FROM node:10-alpine as webbuilder
 
 RUN apk update \
-  && apk add docker git \
+  && apk add git \
   && git clone --depth=1 https://github.com/vicanso/diving.git /diving \
-  && cd /diving \
-  && go build -tags netgo -o diving 
+  && cd /diving/web \
+  && npm i \
+  && npm run build \
+  && rm -rf node_module
 
+FROM golang:1.11.1-alpine as builder
+
+COPY --from=webbuilder /diving /diving
+
+RUN apk update \
+  && apk add git make gcc \
+  && go get -u github.com/gobuffalo/packr/v2/packr2 \
+  && cd /diving \
+  && make build
 FROM alpine 
 
 EXPOSE 7001

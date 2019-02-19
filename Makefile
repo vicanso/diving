@@ -1,3 +1,5 @@
+export GO111MODULE = on
+
 .PHONY: default test test-cover dev build
 
 # for dev
@@ -13,12 +15,14 @@ test-cover:
 
 build-web:
 	cd web \
-		&& npm run build \
-		&& cd .. \
-		&& packr -z
+		&& npm run build
 
 bench:
 	go test -bench=. ./...
 
 build:
+	packr2
 	go build -o diving 
+
+clean:
+	packr2 clean

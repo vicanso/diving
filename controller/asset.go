@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"os"
 
-	"github.com/gobuffalo/packr"
+	"github.com/gobuffalo/packr/v2"
 	"github.com/vicanso/cod"
 	"github.com/vicanso/cod/middleware"
 	"github.com/vicanso/diving/router"
@@ -15,12 +15,12 @@ type (
 	assetCtrl struct {
 	}
 	staticFile struct {
-		box packr.Box
+		box *packr.Box
 	}
 )
 
 var (
-	box = packr.NewBox("../web/build")
+	box = packr.New("asset", "../web/build")
 )
 
 func (sf *staticFile) Exists(file string) bool {
@@ -57,7 +57,7 @@ func sendFile(c *cod.Context, file string) (err error) {
 	if err != nil {
 		return
 	}
-	c.SetFileContentType(file)
+	c.SetContentTypeByExt(file)
 	c.BodyBuffer = bytes.NewBuffer(buf)
 	return
 }
