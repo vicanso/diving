@@ -6,8 +6,9 @@ import (
 
 	"github.com/gobuffalo/packr/v2"
 	"github.com/vicanso/cod"
-	"github.com/vicanso/cod/middleware"
 	"github.com/vicanso/diving/router"
+
+	staticServe "github.com/vicanso/cod-static-serve"
 )
 
 type (
@@ -42,7 +43,8 @@ func init() {
 	sf := &staticFile{
 		box: box,
 	}
-	g.GET("/static/*file", middleware.NewStaticServe(sf, middleware.StaticServeConfig{
+	g.GET("/static/*file", staticServe.New(sf, staticServe.Config{
+		Path: "/static",
 		// 客户端缓存一年
 		MaxAge: 365 * 24 * 3600,
 		// 缓存服务器缓存一个小时

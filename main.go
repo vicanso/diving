@@ -6,12 +6,22 @@ import (
 	"os"
 	"time"
 
-	"github.com/vicanso/cod"
-	"github.com/vicanso/cod/middleware"
-	_ "github.com/vicanso/diving/controller"
-	"github.com/vicanso/diving/log"
-	"github.com/vicanso/diving/router"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	"github.com/vicanso/cod"
+	_ "github.com/vicanso/diving/controller"
+	"github.com/vicanso/diving/router"
+
+	humanize "github.com/dustin/go-humanize"
+
+	compress "github.com/vicanso/cod-compress"
+	errorHandler "github.com/vicanso/cod-error-handler"
+	etag "github.com/vicanso/cod-etag"
+	fresh "github.com/vicanso/cod-fresh"
+	recover "github.com/vicanso/cod-recover"
+	responder "github.com/vicanso/cod-responder"
+	stats "github.com/vicanso/cod-stats"
 )
 
 var (
@@ -57,45 +67,50 @@ func main() {
 	}
 	listen := getListen()
 
-	logger := log.Default()
+	c := zap.NewProductionConfig()
+	c.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	// 只针对panic 以上的日志增加stack trace
+	logger, err := c.Build(zap.AddStacktrace(zap.DPanicLevel))
+	if err != nil {
+		panic(err)
+	}
 
 	d := cod.New()
 
-	// 如果出错则会触发此回调（在 ErrorHandler 中会将出错转换为相应的http响应，此类情况不会触发）
 	d.OnError(func(c *cod.Context, err error) {
-		// 可以针对实际场景输出更多的日志信息
-		logger.DPanic("exception",
+		logger.DPanic("unexpected error",
 			zap.String("uri", c.Request.RequestURI),
 			zap.Error(err),
 		)
 	})
 
-	d.Use(middleware.NewRecover())
+	d.Use(recover.New())
 
-	d.Use(middleware.NewStats(middleware.StatsConfig{
-		OnStats: func(statsInfo *middleware.StatsInfo, _ *cod.Context) {
+	d.Use(stats.New(stats.Config{
+		OnStats: func(statsInfo *stats.Info, _ *cod.Context) {
 			logger.Info("access log",
 				zap.String("ip", statsInfo.IP),
 				zap.String("method", statsInfo.Method),
 				zap.String("uri", statsInfo.URI),
 				zap.Int("status", statsInfo.Status),
 				zap.String("consuming", statsInfo.Consuming.String()),
+				zap.String("size", humanize.Bytes(uint64(statsInfo.Size))),
 			)
 		},
 	}))
 
-	d.Use(middleware.NewDefaultErrorHandler())
+	d.Use(errorHandler.NewDefault())
 
 	d.Use(func(c *cod.Context) error {
 		c.NoCache()
 		return c.Next()
 	})
 
-	d.Use(middleware.NewDefaultFresh())
-	d.Use(middleware.NewDefaultETag())
-	d.Use(middleware.NewDefaultCompress())
+	d.Use(fresh.NewDefault())
+	d.Use(etag.NewDefault())
+	d.Use(compress.NewDefault())
 
-	d.Use(middleware.NewDefaultResponder())
+	d.Use(responder.NewDefault())
 
 	// health check
 	d.GET("/ping", func(c *cod.Context) (err error) {
@@ -109,7 +124,7 @@ func main() {
 	}
 
 	logger.Info("server will listen on " + listen)
-	err := d.ListenAndServe(listen)
+	err = d.ListenAndServe(listen)
 	if err != nil {
 		panic(err)
 	}
