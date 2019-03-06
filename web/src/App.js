@@ -268,7 +268,8 @@ class App extends Component {
       return fileTree;
     }
     let reg = null;
-    if (keyword) {
+    // 如果只是 \ 时，先不生成正则，因为此时还仅是转义字符
+    if (keyword && keyword !== "\\") {
       try {
         reg = new RegExp(keyword, "gi");
       } catch (err) {
