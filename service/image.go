@@ -15,8 +15,8 @@ type (
 		Efficiency float64 `json:"efficiency,omitempty"`
 		// SizeBytes size of image
 		SizeBytes uint64 `json:"sizeBytes,omitempty"`
-		// UserSizeByes user size of image
-		UserSizeByes uint64 `json:"userSizeByes,omitempty"`
+		// UserSizeBytes user size of image
+		UserSizeBytes uint64 `json:"userSizeBytes,omitempty"`
 		// WastedBytes wasted size of image
 		WastedBytes uint64 `json:"wastedBytes,omitempty"`
 		// LayerAnalysisList layer analysis list
@@ -188,11 +188,20 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 	if err != nil {
 		return
 	}
+	var userSizeBytes uint64
+	// 默认的计算 user size bytes有误
+	layerCount := len(result.Layers)
+	for i, layer := range result.Layers {
+		if i < layerCount-1 {
+			userSizeBytes += layer.Size()
+		}
+	}
+
 	// 镜像基本信息
 	imgAnalysis = &ImageAnalysis{
 		Efficiency:        result.Efficiency,
 		SizeBytes:         result.SizeBytes,
-		UserSizeByes:      result.UserSizeByes,
+		UserSizeBytes:     userSizeBytes,
 		WastedBytes:       result.WastedBytes,
 		LayerAnalysisList: make([]*LayerAnalysis, len(result.Layers)),
 	}
@@ -211,7 +220,6 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 	}
 	imgAnalysis.InefficiencyAnalysisList = inefficiencyAnalysisList
 
-	layerCount := len(result.Layers)
 	layers := make([]image.Layer, layerCount)
 	// layer的顺序为从顶至底层（最新生成的那层为0）
 	// 保证layer的排序

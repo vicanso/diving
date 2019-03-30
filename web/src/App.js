@@ -1,146 +1,62 @@
 import React, { Component } from "react";
-import "./App.css";
-import ImageSearch from "./ImageSearch";
-import LinearProgress from "@material-ui/core/LinearProgress";
-import axios from "axios";
+import "antd/dist/antd.css";
 import {
-  Grid,
-  Table,
-  TableRow,
-  TableCell,
-  TableHead,
-  TableBody,
-  MenuItem,
-  Checkbox,
-  FormControlLabel,
-  InputBase,
+  Input,
+  Spin,
+  message,
+  Row,
+  Col,
+  Card,
+  Icon,
   Tooltip,
-  Select
-} from "@material-ui/core";
-import Paper from "@material-ui/core/Paper";
-import AppBar from "@material-ui/core/AppBar";
-import FormControl from "@material-ui/core/FormControl";
-import InputLabel from "@material-ui/core/InputLabel";
+  Table,
+  Progress
+} from "antd";
 
 import bytes from "bytes";
-import CodeIcon from "@material-ui/icons/Code";
-import CloseIcon from "@material-ui/icons/Close";
-import HelpIcon from "@material-ui/icons/Help";
-import IconButton from "@material-ui/core/IconButton";
-import BorderInnerIcon from "@material-ui/icons/BorderInner";
-import BorderClearIcon from "@material-ui/icons/BorderClear";
-import Toolbar from "@material-ui/core/Toolbar";
-import Typography from "@material-ui/core/Typography";
-import DonutLargeIcon from "@material-ui/icons/DonutLarge";
-import TimelapseIcon from "@material-ui/icons/Timelapse";
 
-import Message from "./Message";
+import "./App.css";
+import FileTree from "./FileTree";
+import { fetchImage, fetchLayer, fetchCaches } from "./image";
+import {
+  getFileType,
+  TypeUnknown,
+  convertCacheDate,
+  convertTimeConsuming
+} from "./util";
+import FileTypeProportion from "./FileTypeProportion";
+import logo from "./logo.png";
 
-const colors = {
-  changed: "#ff9100",
-  added: "#00e676",
-  removed: "#ff3d00",
-  size: "#1a237e",
-  default: "#333"
-};
+const Search = Input.Search;
 
-const loadingStatus = "loading";
-
-function getErrorMessage(err) {
-  if (!err) {
-    return "";
-  }
-  if (err.response) {
-    return err.response.data.message;
-  }
-  return err.message;
-}
-
-// 生成模块标题
-function createTitle(title, left) {
-  return (
-    <div
-      style={{
-        lineHeight: "40px",
-        position: "relative",
-        fontSize: "16px",
-        color: "#333"
-      }}
-    >
-      <h3
-        style={{
-          margin: 0,
-          fontWeight: 600
-        }}
-      >
-        {title}
-      </h3>
-      <div
-        style={{
-          borderBottom: "1px solid rgba(80, 80, 80, 0.85)",
-          position: "absolute",
-          left: left,
-          right: 0,
-          top: "50%",
-          marginTop: "1px"
-        }}
-      />
-    </div>
-  );
-}
+const StepSearch = "search";
+const StepDetail = "detail";
 
 class App extends Component {
   state = {
-    status: "",
     image: "",
-    detailCmdID: "",
-    error: null,
+    step: StepSearch,
+    loading: false,
     basicInfo: null,
-    expands: [],
-    expandAll: false,
-    showModifications: false,
-    fileTree: null,
-    keyword: "",
-    sizeFilter: "",
-    getTreeStatus: "",
-    selectedLayer: ""
+    fileTypeProportion: null,
+    caches: null
   };
-  // 获取 layer的文件树
-  async getTree(layer = 0) {
-    const { image } = this.state;
-    this.setState({
-      fileTree: null,
-      error: null,
-      getTreeStatus: loadingStatus
-    });
-    try {
-      const res = await axios.get(`/api/images/tree/${image}?layer=${layer}`);
-      this.setState({
-        fileTree: res.data
-      });
-    } catch (err) {
-      this.setState({
-        error: err
-      });
-    } finally {
-      this.setState({
-        getTreeStatus: ""
-      });
-    }
-  }
   // 获取image的基本信息
   async getBasicInfo(name, times = 0) {
     if (!name) {
       return;
     }
-    this.setState({
-      status: loadingStatus
-    });
+    const { loading } = this.state;
+    if (!loading) {
+      this.setState({
+        loading: true
+      });
+    }
     try {
       if (times > 3) {
-        throw new Error("Timeout, please try again later.");
+        throw new Error("Analyse image isn't done, please try again later.");
       }
-      const { status, data } = await axios.get(`/api/images/detail/${name}`);
+      const { status, data } = await fetchImage(name);
       if (status === 202) {
         setTimeout(() => {
           this.getBasicInfo(name, times + 1);
@@ -148,773 +64,439 @@ class App extends Component {
         return;
       }
       this.setState({
-        // 不能在finally中设置状态，
-        // 因为会循环的去查询
-        status: "",
-        basicInfo: data
+        loading: false,
+        basicInfo: data,
+        step: StepDetail
       });
-      if (data.layerAnalysisList) {
-        this.showLayer(data.layerAnalysisList[0].shortID);
+      this.fetchLayerInfo();
+    } catch (err) {
+      message.error(err.message);
+      this.setState({
+        loading: false
+      });
+    }
+  }
+  async fetchLayerInfo() {
+    const { image, basicInfo } = this.state;
+    const res = await fetchLayer(image, 0);
+    const { data } = res;
+    const sizeMap = {};
+    const loop = item => {
+      if (!item) {
+        return;
+      }
+      const { children } = item;
+      if (children) {
+        const keys = Object.keys(item.children);
+        keys.forEach(key => {
+          const tmp = children[key];
+          if (tmp.isDir) {
+            loop(tmp);
+            return;
+          }
+          // 软链接，忽略
+          if (tmp.linkName) {
+            return;
+          }
+          const fileType = getFileType(key);
+          if (!fileType) {
+            return;
+          }
+          if (!sizeMap[fileType]) {
+            sizeMap[fileType] = 0;
+          }
+          sizeMap[fileType] += tmp.size;
+        });
+      }
+    };
+    loop(data);
+    let otherTypeSize = basicInfo.sizeBytes;
+    Object.keys(sizeMap).forEach(item => {
+      otherTypeSize -= sizeMap[item];
+    });
+    sizeMap[TypeUnknown] = otherTypeSize;
+    this.setState({
+      fileTypeProportion: sizeMap
+    });
+  }
+  onSearch(name) {
+    this.setState({
+      image: name
+    });
+    this.getBasicInfo(name, 0);
+  }
+  async refreshCacheImages() {
+    const { caches } = this.state;
+    try {
+      const { data } = await fetchCaches();
+      const key = JSON.stringify(data);
+      if (!caches || JSON.stringify(caches) !== key) {
+        this.setState({
+          caches: data
+        });
       }
     } catch (err) {
-      this.setState({
-        status: "",
-        error: err
-      });
+      message.error(err.message);
     }
   }
-  findExpandIndex(level, name) {
-    const { expands } = this.state;
-    let found = -1;
-    expands.forEach((item, index) => {
-      if (found !== -1) {
-        return;
-      }
-      if (item.level === level && item.name === name) {
-        found = index;
-      }
-    });
-    return found;
-  }
-  // 切换展开的显示
-  toggleExpand(level, name) {
-    const { expands } = this.state;
-    const index = this.findExpandIndex(level, name);
-    if (index !== -1) {
-      expands.splice(index, 1);
-    } else {
-      expands.push({
-        level,
-        name
-      });
-    }
-    this.setState({
-      expands
-    });
-  }
-  // 是否应该展开此目录
-  shouldExpand(level, name) {
-    const { expandAll } = this.state;
-    // 如果设置全部展开
-    if (expandAll) {
-      return true;
-    }
-    return this.findExpandIndex(level, name) !== -1;
-  }
-  // 切换展示该 layer的命令
-  toggleDetailCmd(id) {
-    const { detailCmdID } = this.state;
-    if (id !== detailCmdID) {
-      this.setState({
-        detailCmdID: id
-      });
+  renderSearch() {
+    const { step } = this.state;
+    if (step !== StepSearch) {
       return;
     }
-    this.setState({
-      detailCmdID: ""
-    });
-  }
-  onSearch(image) {
-    if (!image) {
-      return;
-    }
-    this.setState({
-      image
-    });
-    this.getBasicInfo(image);
-  }
-  showLayer(id = "") {
-    const { basicInfo } = this.state;
-    this.setState({
-      selectedLayer: id
-    });
-    if (!id) {
-      return;
-    }
-    let index = -1;
-    basicInfo.layerAnalysisList.forEach((item, i) => {
-      if (item.shortID === id) {
-        index = i;
-      }
-    });
-    if (index !== -1) {
-      this.getTree(index);
-    }
-  }
-  // 返回
-  goBack() {
-    // 清除重置信息
-    this.setState({
-      status: "",
-      image: "",
-      detailCmdID: "",
-      error: null,
-      basicInfo: null,
-      expands: [],
-      expandAll: false,
-      showModifications: false,
-      fileTree: null,
-      keyword: "",
-      sizeFilter: "",
-      selectedLayer: ""
-    });
-  }
-  getFileTree() {
-    const { keyword, fileTree, showModifications, sizeFilter } = this.state;
-    if (!fileTree) {
-      return null;
-    }
-    if (!keyword && !sizeFilter && !showModifications) {
-      return fileTree;
-    }
-    let reg = null;
-    // 如果只是 \ 时，先不生成正则，因为此时还仅是转义字符
-    if (keyword && keyword !== "\\") {
-      try {
-        reg = new RegExp(keyword, "gi");
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    let minSize = 0;
-    if (sizeFilter) {
-      minSize = bytes.parse(sizeFilter.substring(2));
-    }
-    // 判断是否符合筛选条件
-    const check = (name, item) => {
-      const { size } = item;
-      let regCheck = true;
-      let sizeCheck = true;
-      let modificationCheck = true;
-      if (reg) {
-        regCheck = reg.test(name);
-      }
-      if (minSize) {
-        sizeCheck = size >= minSize;
-      }
-      if (showModifications && !item.diffType) {
-        modificationCheck = false;
-      }
-      return regCheck && sizeCheck && modificationCheck;
-    };
-    // 复制
-    const copy = item => {
-      const clone = Object.assign({}, item);
-      delete clone.children;
-      return clone;
-    };
-    // 筛选复制可用的节点
-    const filter = (current, original) => {
-      if (!original || !original.children) {
-        return;
-      }
-      const keys = Object.keys(original.children);
-      keys.forEach(k => {
-        const originalItem = original.children[k];
-        const item = copy(originalItem);
-        if (item.isDir) {
-          filter(item, originalItem);
-        }
-        // 如果是目录，而且目录下有文件
-        if (
-          check(k, item) ||
-          (item.isDir &&
-            item.children &&
-            Object.keys(item.children).length !== 0)
-        ) {
-          current.children = current.children || {};
-          current.children[k] = item;
-        }
-      });
-    };
-    const result = copy(fileTree);
-    filter(result, fileTree);
-    return result;
-  }
-  // 输出layer相关信息
-  renderLayerInfo() {
-    const { basicInfo, detailCmdID } = this.state;
-    const cmdLimit = 24;
-    const rows = basicInfo.layerAnalysisList.map(row => {
-      let cmd = row.command;
-      if (cmd.length > cmdLimit) {
-        cmd = cmd.substring(0, cmdLimit) + "...";
-      }
-      let detailCmd = null;
-      if (detailCmdID === row.id) {
-        detailCmd = (
-          <Paper className="diving-command diving-paper">{row.command}</Paper>
-        );
-      }
-
-      return (
-        <TableRow key={row.id}>
-          <TableCell>{row.shortID}</TableCell>
-          <TableCell
-            align="right"
-            style={{
-              color: colors.size
-            }}
-          >
-            {bytes.format(row.size)}
-          </TableCell>
-          <TableCell>
-            <IconButton
-              key="detail"
-              aria-label="Code"
-              style={{
-                float: "right",
-                color: detailCmdID === row.id ? colors.size : null
-              }}
-              onClick={() => this.toggleDetailCmd(row.id)}
-            >
-              <CodeIcon />
-            </IconButton>
-            {detailCmd}
-            {cmd}
-          </TableCell>
-        </TableRow>
-      );
-    });
     return (
-      <Paper className="diving-layers diving-paper">
-        {createTitle("[Layers]", "80px")}
-        <Table
+      <div className="diving-search-wrapper">
+        <a
+          href="https://github.com/vicanso/diving"
           style={{
-            tableLayout: "fixed"
+            position: "absolute",
+            padding: "10px",
+            right: 0,
+            top: 0
           }}
         >
-          <TableHead>
-            <TableRow>
-              <TableCell>Image ID</TableCell>
-              <TableCell align="right">Size</TableCell>
-              <TableCell>Command</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>{rows}</TableBody>
-        </Table>
-      </Paper>
-    );
-  }
-  // 输出重复文件的信息
-  renderInefficiency() {
-    const { basicInfo } = this.state;
-    const { inefficiencyAnalysisList } = basicInfo;
-    if (!inefficiencyAnalysisList || !inefficiencyAnalysisList.length) {
-      return null;
-    }
-    const files = inefficiencyAnalysisList.slice(0);
-    files
-      .sort((item1, item2) => {
-        return item1.cumulativeSize - item2.cumulativeSize;
-      })
-      .reverse();
-    const rows = files.map(file => {
-      const size = bytes.format(file.cumulativeSize);
-      return (
-        <TableRow key={file.path}>
-          <TableCell>{file.path}</TableCell>
-          <TableCell
+          <svg
+            height="32"
+            viewBox="0 0 16 16"
+            width="32"
+            aria-hidden="true"
             style={{
-              color: colors.size
+              fill: "rgb(255, 255, 255)"
             }}
-            align="right"
           >
-            {size}
-          </TableCell>
-          <TableCell align="right">{file.count}</TableCell>
-        </TableRow>
-      );
-    });
-    return (
-      <Paper className="diving-inefficiency diving-paper">
-        {createTitle("[Inefficiency]", "130px")}
-        <Table
-          style={{
-            tableLayout: "fixed"
-          }}
-        >
-          <TableHead>
-            <TableRow>
-              <TableCell>File</TableCell>
-              <TableCell align="right">Total Space</TableCell>
-              <TableCell align="right">Count</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>{rows}</TableBody>
-        </Table>
-      </Paper>
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+          </svg>
+        </a>
+        <Search
+          autoFocus
+          addonBefore="Docker image:"
+          className="diving-search"
+          placeholder="Input docker image's name(e.g., redis:alpine)"
+          enterButton="Search"
+          size="large"
+          onSearch={value => this.onSearch(value)}
+        />
+      </div>
     );
   }
-  // 输出镜像的基本信息
   renderBasicInfo() {
-    const { basicInfo } = this.state;
-    const efficiency = (basicInfo.efficiency * 100).toFixed(2);
-    const infos = [
+    const { basicInfo, fileTypeProportion } = this.state;
+    const efficiencyScoreName = "Efficiency Score";
+    const imageSizeName = "Image Size";
+    const userSizeName = "User Size";
+    const wastedSizeName = "Wasted Size";
+    const keys = [
       {
-        desc: "Image efficiency score:",
-        value: `${efficiency}%`
+        name: efficiencyScoreName,
+        title: "Image efficiency score",
+        value: `${(basicInfo.efficiency * 100).toFixed(2)}%`
       },
       {
-        desc: "Total image size:",
+        name: imageSizeName,
+        title:
+          "Image size and file type proportion(Text, Image, Document, Compression, Others)",
         value: bytes.format(basicInfo.sizeBytes)
       },
       {
-        desc: "User size:",
-        value: bytes.format(basicInfo.userSizeByes)
+        name: userSizeName,
+        title: "All bytes except for the base image",
+        value: bytes.format(basicInfo.userSizeBytes)
       },
       {
-        desc: "Wasted size:",
-        value: bytes.format(basicInfo.wastedBytes) || "0B"
+        name: wastedSizeName,
+        title: "All bytes of remove or duplicate files",
+        value: bytes.format(basicInfo.wastedBytes)
       }
     ];
+    const renderEfficiencyScoreProgress = item => {
+      if (item.name !== efficiencyScoreName) {
+        return;
+      }
+      return (
+        <Tooltip title="Efficiency score gt than 95 may be good">
+          <Progress
+            style={{
+              marginTop: "15px"
+            }}
+            strokeWidth={15}
+            percent={basicInfo.efficiency * 100}
+            showInfo={false}
+            strokeColor={"rgb(19, 194, 194)"}
+            strokeLinecap={"square"}
+          />
+        </Tooltip>
+      );
+    };
+    const renderFileTypeProportion = item => {
+      if (item.name !== imageSizeName || !fileTypeProportion) {
+        return;
+      }
+      return (
+        <FileTypeProportion
+          style={{
+            marginTop: "20px"
+          }}
+          data={fileTypeProportion}
+        />
+      );
+    };
+    const renderUserSize = item => {
+      if (item.name !== userSizeName) {
+        return;
+      }
+      return (
+        <Progress
+          style={{
+            marginTop: "15px"
+          }}
+          strokeWidth={15}
+          percent={(basicInfo.userSizeBytes * 100) / basicInfo.sizeBytes}
+          showInfo={false}
+          strokeColor={"rgb(149, 85, 229)"}
+          strokeLinecap={"square"}
+        />
+      );
+    };
+    const renderWastedSize = item => {
+      if (item.name !== wastedSizeName) {
+        return;
+      }
+      const maxSize = 5 * 1024 * 1024;
+      const percent = Math.min(100, (100 * basicInfo.wastedBytes) / maxSize);
+      let status = "success";
+      if (percent > 70) {
+        status = "exception";
+      } else if (percent > 50) {
+        status = "normal";
+      }
+      return (
+        <Tooltip title="Wasted size should be lt than 2MB">
+          <Progress
+            style={{
+              marginTop: "15px"
+            }}
+            status={status}
+            strokeWidth={15}
+            percent={percent}
+            showInfo={false}
+            strokeLinecap={"square"}
+          />
+        </Tooltip>
+      );
+    };
+    const basicInfoCols = keys.map(item => (
+      <Col
+        xs={24}
+        sm={12}
+        md={12}
+        lg={12}
+        xl={6}
+        key={item.name}
+        className="diving-row-col"
+      >
+        <Card>
+          <Tooltip title={item.title}>
+            <Icon
+              type="info-circle"
+              style={{
+                float: "right",
+                cursor: "pointer"
+              }}
+            />
+          </Tooltip>
+          <span>{item.name}</span>
+          <p>{item.value}</p>
+          {renderEfficiencyScoreProgress(item)}
+          {renderFileTypeProportion(item)}
+          {renderUserSize(item)}
+          {renderWastedSize(item)}
+        </Card>
+      </Col>
+    ));
+    return <Row className="diving-basic-info diving-row">{basicInfoCols}</Row>;
+  }
+  renderLayersAndInefficiency() {
+    const { basicInfo } = this.state;
+    const layerColumns = [
+      {
+        title: "Image ID",
+        dataIndex: "shortID"
+      },
+      {
+        title: "Size",
+        dataIndex: "size",
+        render: size => bytes.format(size),
+        sorter: (a, b) => a.size - b.size
+      },
+      {
+        title: "Command",
+        dataIndex: "command",
+        render: text => (
+          <span
+            style={{
+              wordBreak: "break-all"
+            }}
+          >
+            {text}
+          </span>
+        )
+      }
+    ];
+    const inefficiencyColumn = [
+      {
+        title: "Path",
+        dataIndex: "path"
+      },
+      {
+        title: "Cumulative Size",
+        dataIndex: "cumulativeSize",
+        defaultSortOrder: "descend",
+        render: size => bytes.format(size),
+        sorter: (a, b) => a.cumulativeSize - b.cumulativeSize
+      },
+      {
+        title: "Count",
+        dataIndex: "count",
+        sorter: (a, b) => a.count - b.count
+      }
+    ];
+    const layerAnalysisData = basicInfo.layerAnalysisList.map(item => {
+      item.key = item.id;
+      return item;
+    });
+    let inefficiencyData = null;
+    if (basicInfo.inefficiencyAnalysisList) {
+      inefficiencyData = basicInfo.inefficiencyAnalysisList.map(item => {
+        item.key = item.path;
+        return item;
+      });
+    }
+
     return (
-      <Grid item sm={5}>
-        <Paper className="diving-detail diving-paper">
-          {createTitle("[Detail]", "73px")}
-          {infos.map(item => {
-            return (
-              <p key={item.desc}>
-                {item.desc}
-                <span
-                  style={{
-                    color: colors.size
-                  }}
-                >
-                  {item.value}
-                </span>
-              </p>
-            );
-          })}
-        </Paper>
-        {this.renderLayerInfo()}
-        {this.renderInefficiency()}
-      </Grid>
+      <Row className="diving-row">
+        <Col xs={24} sm={24} md={24} lg={24} xl={12} className="diving-row-col">
+          <Card title="Image Layers">
+            <Table columns={layerColumns} dataSource={layerAnalysisData} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={24} md={24} lg={24} xl={12} className="diving-row-col">
+          <Card title="Inefficient Files">
+            <Table columns={inefficiencyColumn} dataSource={inefficiencyData} />
+          </Card>
+        </Col>
+      </Row>
     );
   }
-  renderFormControl(totalSizeOfFile) {
-    const { basicInfo } = this.state;
-    const layerMenuItems = basicInfo.layerAnalysisList.map(item => {
-      return (
-        <MenuItem key={item.id} value={item.shortID}>
-          {item.shortID}
-        </MenuItem>
-      );
-    });
-    const sizeMenuItems = [
-      "none",
-      ">=10KB",
-      ">=30KB",
-      ">=100KB",
-      ">=500KB",
-      ">=1MB",
-      ">=10MB"
-    ].map(item => {
-      return (
-        <MenuItem key={item} value={item}>
-          {item}
-        </MenuItem>
-      );
-    });
-    const marginLeft = "20px";
-    const sizeTips = `Total size of files: ${bytes.format(totalSizeOfFile)}`;
+  renderFileTrees() {
+    const { image, basicInfo } = this.state;
+    if (!image || !basicInfo) {
+      return;
+    }
+    return <FileTree image={image} layers={basicInfo.layerAnalysisList} />;
+  }
+  renderDetailInfo() {
+    const { step } = this.state;
+    if (step !== StepDetail) {
+      return;
+    }
     return (
-      <form className="diving-control">
-        <div className="diving-control-tooltip">
-          <Tooltip
-            title={
-              <React.Fragment>
-                <p
-                  style={{
-                    fontWeight: 600,
-                    fontSize: "14px"
-                  }}
-                >
-                  {sizeTips}
-                </p>
-              </React.Fragment>
-            }
-          >
-            <TimelapseIcon
-              color="action"
+      <div>
+        <header className="diving-header">
+          <a className="diving-logo" href="/">
+            <img
               style={{
                 marginRight: "5px"
               }}
+              src={logo}
+              alt="logo"
             />
-          </Tooltip>
-          <Tooltip
-            title={
-              <React.Fragment>
-                <ul className="diving-control-tooltip-colors">
-                  <li
-                    style={{
-                      color: colors.added
-                    }}
-                  >
-                    Added Path
-                  </li>
-                  <li
-                    style={{
-                      color: colors.changed
-                    }}
-                  >
-                    Changed Path
-                  </li>
-                  <li
-                    style={{
-                      color: colors.removed
-                    }}
-                  >
-                    Removed Path
-                  </li>
-                </ul>
-              </React.Fragment>
-            }
-          >
-            <HelpIcon color="action" />
-          </Tooltip>
-        </div>
-        <FormControl>
-          <InputLabel htmlFor="layer-select">Layer</InputLabel>
-          <Select
-            onChange={e => {
-              this.showLayer(e.target.value);
-            }}
-            style={{
-              width: "250px"
-            }}
-            value={this.state.selectedLayer}
-          >
-            {layerMenuItems}
-          </Select>
-        </FormControl>
-        <FormControl>
-          <InputLabel htmlFor="size-select">Size</InputLabel>
-          <Select
-            onChange={e => {
-              let v = e.target.value;
-              if (v === "none") {
-                v = "";
-              }
-              this.setState({
-                sizeFilter: v
-              });
-            }}
-            style={{
-              marginLeft,
-              width: "100px"
-            }}
-            value={this.state.sizeFilter}
-          >
-            {sizeMenuItems}
-          </Select>
-        </FormControl>
-        <FormControl>
-          <Paper
-            elevation={1}
-            style={{
-              boxShadow: "none",
-              marginLeft,
-              borderRadius: 0,
-              borderBottom: "1px solid #999"
-            }}
-          >
-            <InputBase
-              value={this.state.keyword}
-              placeholder="Keyword(RegExp)"
-              onChange={e =>
-                this.setState({
-                  keyword: e.target.value
-                })
-              }
-            />
-            <IconButton
-              aria-label="Clear"
-              onClick={() => {
-                this.setState({
-                  keyword: ""
-                });
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Paper>
-        </FormControl>
-        <FormControl
-          style={{
-            marginLeft
-          }}
-        >
-          <FormControlLabel
-            label="Show Modifications"
-            control={
-              <Checkbox
-                checked={this.state.showModifications}
-                onChange={e => {
-                  this.setState({
-                    showModifications: !this.state.showModifications
-                  });
-                }}
-              />
-            }
-          />
-        </FormControl>
-        <FormControl
-          style={{
-            marginLeft
-          }}
-        >
-          <FormControlLabel
-            label="Expand All"
-            control={
-              <Checkbox
-                checked={this.state.expandAll}
-                onChange={e => {
-                  this.setState({
-                    expandAll: !this.state.expandAll
-                  });
-                }}
-              />
-            }
-          />
-        </FormControl>
-      </form>
-    );
-  }
-  // 输出文件树
-  renderFileTree() {
-    const { getTreeStatus } = this.state;
-    const fileNodes = [];
-    let totalSizeOfFile = 0;
-    fileNodes.push(
-      <div key={"fields"} className="diving-file-tree-item">
-        <span className="mode">Permission</span>
-        <span className="ids">UID:GID</span>
-        <span className="size">Size</span>
-        <span>FileTree</span>
-      </div>
-    );
-    const renderFileAnalysis = (tree, prefix, level) => {
-      if (!tree.children || tree.children.length === 0) {
-        return null;
-      }
-      const keys = Object.keys(tree.children);
-      keys.forEach((k, index) => {
-        const item = tree.children[k];
-        const size = bytes.format(item.size);
-        let name = k;
-        // 非目录非软链接
-        if (!item.isDir && !item.linkName && item.size) {
-          totalSizeOfFile += item.size;
-        }
-        if (item.linkName) {
-          name += ` → ${item.linkName}`;
-        }
-        let mode = item.mode;
-        if (mode && mode.charAt(0) === "L") {
-          mode = "-" + mode.substring(1);
-        }
-        const hasChildren = item.children && item.children.length !== 0;
-        const expanded = this.shouldExpand(level, k);
-        let fontColor = "";
-        switch (item.diffType) {
-          case 1:
-            fontColor = colors.changed;
-            break;
-          case 2:
-            fontColor = colors.added;
-            break;
-          case 3:
-            fontColor = colors.removed;
-            break;
-          default:
-            fontColor = colors.default;
-            break;
-        }
-
-        fileNodes.push(
-          <div
-            className="diving-file-tree-item"
-            key={`${prefix}-${k}`}
-            style={{
-              color: fontColor
-            }}
-          >
-            <span className="mode">{mode}</span>
-            <span className="ids">{item.ids}</span>
-            <span className="size">{size}</span>
-            <span
-              style={{
-                textIndent: `${level * 26}px`
-              }}
-            >
-              {hasChildren && (
-                <IconButton
-                  style={{
-                    padding: 0,
-                    color: fontColor,
-                    marginRight: "5px"
-                  }}
-                  onClick={() => this.toggleExpand(level, name)}
-                >
-                  {!expanded && <BorderInnerIcon fontSize="small" />}
-                  {expanded && <BorderClearIcon fontSize="small" />}
-                </IconButton>
-              )}
-              {name}
-            </span>
-          </div>
-        );
-        if (hasChildren && expanded) {
-          renderFileAnalysis(item, `${prefix}-${k}`, level + 1);
-        }
-      });
-    };
-    const fileTree = this.getFileTree();
-    let loading = null;
-    if (getTreeStatus === loadingStatus) {
-      loading = this.getLoading();
-    } else if (fileTree) {
-      renderFileAnalysis(fileTree, "root", 0);
-    } else {
-      loading = (
-        <p
-          style={{
-            textAlign: "center"
-          }}
-        >
-          Get file tree of layer fail
-        </p>
-      );
-    }
-    return (
-      <Grid item sm={7}>
-        <Paper className="diving-file-tree diving-paper">
-          {createTitle("[Current Layer Contents]", "235px")}
-          {this.renderFormControl(totalSizeOfFile)}
-          {fileNodes}
-          {loading}
-        </Paper>
-      </Grid>
-    );
-  }
-  renderResult() {
-    const { basicInfo, image } = this.state;
-    if (!basicInfo) {
-      return null;
-    }
-    return (
-      <div>
-        <AppBar
-          style={{
-            backgroundColor: "#373e5d"
-          }}
-          position="static"
-          className="diving-app-bar"
-        >
-          <Toolbar
-            variant="dense"
-            style={{
-              padding: 0
-            }}
-          >
-            <Typography
-              variant="h6"
-              color="inherit"
-              style={{
-                width: "100%"
-              }}
-            >
-              <IconButton color="inherit" aria-label="DonutLarge">
-                <DonutLargeIcon />
-              </IconButton>
-              {image}
-            </Typography>
-            <IconButton
-              color="inherit"
-              aria-label="Close"
-              onClick={() => this.goBack()}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Toolbar>
-        </AppBar>
-        <Grid container spacing={0} className="diving-grid">
+            <h1>Diving</h1>
+          </a>
+        </header>
+        <div className="diving-detail-info">
           {this.renderBasicInfo()}
-          {this.renderFileTree()}
-        </Grid>
-      </div>
-    );
-  }
-  renderError() {
-    const { error } = this.state;
-    const message = getErrorMessage(error);
-    return (
-      <Message
-        variant={"error"}
-        message={message}
-        onClose={() => {
-          this.setState({
-            error: null
-          });
-        }}
-      />
-    );
-  }
-  getLoading() {
-    return (
-      <div>
-        <p className="diving-loading-tips"> Loading...</p>
-        <LinearProgress />
-      </div>
-    );
-  }
-  renderSearch() {
-    const { status, basicInfo } = this.state;
-    if (basicInfo) {
-      return null;
-    }
-    let loadingTips = null;
-
-    if (status === loadingStatus) {
-      loadingTips = this.getLoading();
-    }
-    return (
-      <div className="diving-main">
-        <a
-          style={{
-            position: "absolute",
-            width: "25px",
-            height: "25px",
-            overflow: "hidden",
-            padding: "15px",
-            right: 0
-          }}
-          href="https://github.com/vicanso/diving"
-        >
-          <svg
-            style={{
-              fill: "#fff"
-            }}
-          >
-            <path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z" />
-          </svg>
-        </a>
-        <div className="diving-search">
-          <ImageSearch onSearch={name => this.onSearch(name.trim())} />
-          {loadingTips}
+          {this.renderFileTrees()}
+          {this.renderLayersAndInefficiency()}
         </div>
       </div>
     );
+  }
+  renderCacheImages() {
+    const { caches } = this.state;
+    if (!caches) {
+      return;
+    }
+    const keys = Object.keys(caches);
+    if (keys.length === 0) {
+      return;
+    }
+    keys.sort((k1, k2) => caches[k2].createdAt - caches[k1].createdAt);
+    const arr = keys.map(key => {
+      const item = caches[key];
+      const date = convertCacheDate(item.createdAt);
+      let iconType = "loading";
+      let color = "#1890ff";
+      let timeConsuming = null;
+      if (item.status === 2) {
+        iconType = "check-circle";
+        color = "#52c41a";
+      } else if (item.status === 1) {
+        iconType = "close-circle";
+        color = "#f5222d";
+      }
+      if (item.timeConsuming) {
+        timeConsuming = (
+          <span
+            style={{
+              margin: "0 5px"
+            }}
+          >
+            {convertTimeConsuming(item.timeConsuming)}
+          </span>
+        );
+      }
+      return (
+        <div
+          key={key + item.status}
+          className="diving-cache-image"
+          onClick={() => this.onSearch(key)}
+        >
+          {key}
+          <span
+            style={{
+              margin: "0 5px"
+            }}
+          >
+            {date}
+          </span>
+          {timeConsuming}
+          <Icon
+            type={iconType}
+            style={{
+              color
+            }}
+          />
+        </div>
+      );
+    });
+    return <div className="diving-cache-images">{arr}</div>;
   }
   render() {
     return (
-      <div className="diving">
-        {this.renderSearch()}
-        {this.renderResult()}
-        {this.renderError()}
-      </div>
+      <Spin spinning={this.state.loading} tip="loading...">
+        <div className="diving">
+          {this.renderSearch()}
+          {this.renderDetailInfo()}
+          {this.renderCacheImages()}
+        </div>
+      </Spin>
     );
+  }
+  componentDidMount() {
+    setInterval(() => {
+      this.refreshCacheImages();
+    }, 5000);
+    this.refreshCacheImages();
   }
 }
 

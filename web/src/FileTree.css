@@ -1,0 +1,39 @@
+.diving-file-tree-functions {
+  overflow: hidden;
+  /* margin-bottom: 15px; */
+}
+
+.diving-file-tree-functions-item {
+  /* float: left; */
+  display: inline-block;
+  margin-bottom: 15px;
+  margin-right: 15px;
+}
+
+.diving-file-tree-item {
+  font-size: 14px;
+}
+
+.diving-file-tree-item:nth-child(2n) {
+  background-color: #f7f7f6;
+}
+
+.diving-file-tree-item > span {
+  display: inline-block;
+  line-height: 30px;
+  margin-right: 15px;
+}
+
+.diving-file-tree-item .mode {
+  width: 100px;
+}
+
+.diving-file-tree-item .ids {
+  width: 80px;
+  text-align: right;
+}
+
+.diving-file-tree-item .size {
+  width: 100px;
+  text-align: right;
+}

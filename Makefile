@@ -17,6 +17,9 @@ build-web:
 	cd web \
 		&& npm run build
 
+list-mod:
+	go list -m -u all
+
 bench:
 	go test -bench=. ./...
 

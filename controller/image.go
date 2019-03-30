@@ -33,10 +33,16 @@ type (
 	// imageCtrl image ctrl
 	imageCtrl struct{}
 	imageInfo struct {
-		CreatedAt int64
-		Status    int
-		Err       error
-		Analysis  *service.ImageAnalysis
+		// CreatedAt create time
+		CreatedAt int64 `json:"createdAt,omitempty"`
+		// Status status
+		Status int `json:"status,omitempty"`
+		// Err error
+		Err error `json:"err,omitempty"`
+		// TimeConsuming time consuming
+		TimeConsuming time.Duration `json:"timeConsuming,omitempty"`
+		// Analysis image analysis information
+		Analysis *service.ImageAnalysis `json:"-"`
 	}
 )
 
@@ -53,15 +59,18 @@ func init() {
 
 	g.GET("/detail/*name", ctrl.getBasicInfo)
 
+	g.GET("/caches", ctrl.getCacheList)
 }
 
 func doAnalyze(name string) {
+	startedAt := time.Now()
 	analysis, err := service.Analyze(name)
 	if err != nil {
 		imageInfoCache.Add(name, &imageInfo{
-			CreatedAt: time.Now().Unix(),
-			Status:    analysisFail,
-			Err:       err,
+			CreatedAt:     startedAt.Unix(),
+			Status:        analysisFail,
+			Err:           err,
+			TimeConsuming: time.Since(startedAt),
 		})
 		logger.Error("analyze fail",
 			zap.String("name", name),
@@ -70,9 +79,10 @@ func doAnalyze(name string) {
 		return
 	}
 	imageInfoCache.Add(name, &imageInfo{
-		CreatedAt: time.Now().Unix(),
-		Status:    analysisDone,
-		Analysis:  analysis,
+		CreatedAt:     startedAt.Unix(),
+		Status:        analysisDone,
+		Analysis:      analysis,
+		TimeConsuming: time.Since(startedAt),
 	})
 }
 
@@ -90,7 +100,8 @@ func (ctrl imageCtrl) getBasicInfo(c *cod.Context) (err error) {
 	}
 	if info == nil {
 		info = &imageInfo{
-			Status: analysisDoing,
+			CreatedAt: time.Now().Unix(),
+			Status:    analysisDoing,
 		}
 		imageInfoCache.Add(name, info)
 		go doAnalyze(name)
@@ -147,5 +158,23 @@ func (ctrl imageCtrl) getTree(c *cod.Context) (err error) {
 	}
 
 	c.Body = service.GetFileAnalysis(info.Analysis, index)
+	return
+}
+
+// getCacheList get cache list
+func (ctrl imageCtrl) getCacheList(c *cod.Context) (err error) {
+	keys := imageInfoCache.Keys()
+	result := make(map[string]*imageInfo)
+	for _, key := range keys {
+		v, ok := imageInfoCache.Get(key)
+		if ok {
+			info := v.(*imageInfo)
+			// 只返回未过期的
+			if info.CreatedAt+imageInfoTTL > time.Now().Unix() {
+				result[key.(string)] = info
+			}
+		}
+	}
+	c.Body = result
 	return
 }
