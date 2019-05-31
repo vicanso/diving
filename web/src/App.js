@@ -41,6 +41,22 @@ class App extends Component {
     fileTypeProportion: null,
     caches: null
   };
+  constructor() {
+    super();
+    const { location } = window;
+    if (location.search) {
+      const arr = location.search.substring(1).split("&");
+      const query = {};
+      // 简单处理，不考虑有相同key的情况
+      arr.forEach(item => {
+        const tmp = item.split("=");
+        query[tmp[0]] = tmp[1];
+      });
+      if (query.image) {
+        this.state.image = query.image;
+      }
+    }
+  }
   // 获取image的基本信息
   async getBasicInfo(name, times = 0) {
     if (!name) {
@@ -140,7 +156,7 @@ class App extends Component {
     }
   }
   renderSearch() {
-    const { step } = this.state;
+    const { step, image } = this.state;
     if (step !== StepSearch) {
       return;
     }
@@ -169,6 +185,7 @@ class App extends Component {
         </a>
         <Search
           autoFocus
+          defaultValue={image}
           addonBefore="Docker image:"
           className="diving-search"
           placeholder="Input docker image's name(e.g., redis:alpine)"
@@ -493,6 +510,10 @@ class App extends Component {
     );
   }
   componentDidMount() {
+    const { image } = this.state;
+    if (image) {
+      this.onSearch(image);
+    }
     setInterval(() => {
       this.refreshCacheImages();
     }, 5000);
