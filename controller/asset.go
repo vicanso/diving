@@ -37,7 +37,7 @@ func (sf *staticFile) Stat(file string) os.FileInfo {
 func init() {
 	g := router.NewGroup("")
 	ctrl := assetCtrl{}
-	g.GET("/", noQuery, ctrl.index)
+	g.GET("/", ctrl.index)
 	g.GET("/favicon.ico", ctrl.favIcon)
 
 	sf := &staticFile{
