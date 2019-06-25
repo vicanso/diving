@@ -58,10 +58,7 @@ export function getFileTypeName(type) {
 
 export function convertCacheDate(value) {
   const str = new Date(value * 1000).toLocaleString();
-  const arr = str.split(",");
-  const tmpArr = arr[0].trim().split("/");
-  tmpArr.pop();
-  return tmpArr.join("/") + " " + arr[1].trim();
+  return str;
 }
 
 export function convertTimeConsuming(value) {
