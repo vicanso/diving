@@ -21,12 +21,12 @@ FROM alpine
 
 EXPOSE 7001
 
-COPY --from=builder /usr/lib/libltdl.so.7.3.1 /usr/lib/
+# COPY --from=builder /usr/lib/libltdl.so.7.3.1 /usr/lib/
 COPY --from=builder /usr/bin/docker /usr/bin/docker
 COPY --from=builder /diving/diving /usr/local/bin/diving
 
-RUN ln -s /usr/lib/libltdl.so.7.3.1 /usr/lib/libltdl.so.7 \
-  && ln -s /usr/lib/libltdl.so.7.3.1 /usr/lib/libltdl.so
+# RUN ln -s /usr/lib/libltdl.so.7.3.1 /usr/lib/libltdl.so.7 \
+  # && ln -s /usr/lib/libltdl.so.7.3.1 /usr/lib/libltdl.so
 
 CMD ["diving"]
 
