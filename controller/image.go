@@ -6,7 +6,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/vicanso/cod"
+	"github.com/vicanso/elton"
 	"github.com/vicanso/diving/router"
 	"github.com/vicanso/diving/service"
 	"github.com/vicanso/hes"
@@ -87,7 +87,7 @@ func doAnalyze(name string) {
 }
 
 // getBasicInfo get basic info of image
-func (ctrl imageCtrl) getBasicInfo(c *cod.Context) (err error) {
+func (ctrl imageCtrl) getBasicInfo(c *elton.Context) (err error) {
 	name := c.Param("name")[1:]
 	var info *imageInfo
 	v, ok := imageInfoCache.Get(name)
@@ -122,7 +122,7 @@ func (ctrl imageCtrl) getBasicInfo(c *cod.Context) (err error) {
 	return
 }
 
-func (ctrl imageCtrl) getTree(c *cod.Context) (err error) {
+func (ctrl imageCtrl) getTree(c *elton.Context) (err error) {
 	layer := c.QueryParam("layer")
 	if layer == "" {
 		err = hes.New("layer can not be null")
@@ -162,7 +162,7 @@ func (ctrl imageCtrl) getTree(c *cod.Context) (err error) {
 }
 
 // getCacheList get cache list
-func (ctrl imageCtrl) getCacheList(c *cod.Context) (err error) {
+func (ctrl imageCtrl) getCacheList(c *elton.Context) (err error) {
 	keys := imageInfoCache.Keys()
 	result := make(map[string]*imageInfo)
 	for _, key := range keys {

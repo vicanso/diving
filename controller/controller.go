@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/vicanso/cod"
+	"github.com/vicanso/elton"
 	"github.com/vicanso/diving/log"
 	"github.com/vicanso/hes"
 )
@@ -12,7 +12,7 @@ var (
 )
 
 // noQuery not allow any query string
-func noQuery(c *cod.Context) (err error) {
+func noQuery(c *elton.Context) (err error) {
 	if c.Request.URL.RawQuery != "" {
 		err = errQueryNotAllow
 		return
