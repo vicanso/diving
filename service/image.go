@@ -220,19 +220,12 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 	}
 	imgAnalysis.InefficiencyAnalysisList = inefficiencyAnalysisList
 
-	layers := make([]image.Layer, layerCount)
-	// layer的顺序为从顶至底层（最新生成的那层为0）
-	// 保证layer的排序
-	for _, layer := range result.Layers {
-		layers[layer.Index()] = layer
-	}
-
 	cache := filetree.NewFileTreeCache(result.RefTrees)
 	cache.Build()
 	imgAnalysis.TreeCache = &cache
 
 	// 生成各层的相关信息
-	for index, layer := range layers {
+	for index, layer := range result.Layers {
 		la := &LayerAnalysis{
 			ID:      layer.Id(),
 			ShortID: layer.ShortId(),
