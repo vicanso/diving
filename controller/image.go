@@ -6,9 +6,9 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/vicanso/elton"
 	"github.com/vicanso/diving/router"
 	"github.com/vicanso/diving/service"
+	"github.com/vicanso/elton"
 	"github.com/vicanso/hes"
 	"go.uber.org/zap"
 )
