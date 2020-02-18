@@ -157,7 +157,11 @@ func (ctrl imageCtrl) getTree(c *elton.Context) (err error) {
 		c.CacheMaxAge("5m")
 	}
 
-	c.Body = service.GetFileAnalysis(info.Analysis, index)
+	result, err := service.GetFileAnalysis(info.Analysis, index)
+	if err != nil {
+		return
+	}
+	c.Body = result
 	return
 }
 

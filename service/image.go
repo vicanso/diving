@@ -1,11 +1,13 @@
 package service
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
-	"github.com/wagoodman/dive/filetree"
-	"github.com/wagoodman/dive/image"
+	"github.com/wagoodman/dive/dive"
+
+	"github.com/wagoodman/dive/dive/filetree"
 )
 
 type (
@@ -23,7 +25,8 @@ type (
 		LayerAnalysisList []*LayerAnalysis `json:"layerAnalysisList,omitempty"`
 		// InefficiencyAnalysisList inefficiency analysis list
 		InefficiencyAnalysisList []*InefficiencyAnalysis `json:"inefficiencyAnalysisList,omitempty"`
-		TreeCache                *filetree.TreeCache     `json:"-"`
+		Comparer                 *filetree.Comparer      `json:"-"`
+		// TreeCache                *filetree.TreeCache     `json:"-"`
 	}
 	// LayerAnalysis analysis for layer
 	LayerAnalysis struct {
@@ -128,7 +131,7 @@ func updateDirSizeAndDiffType(fileAnalysis *FileAnalysis) int64 {
 			size += item.Size
 		}
 		switch item.DiffType {
-		case filetree.Changed:
+		case filetree.Modified:
 			changedCount++
 		case filetree.Added:
 			addedCount++
@@ -140,7 +143,7 @@ func updateDirSizeAndDiffType(fileAnalysis *FileAnalysis) int64 {
 	}
 	// 如果目录的diff type 为默认值
 	// diff type 中未处理目录新增的情况
-	if fileAnalysis.DiffType == filetree.Unchanged {
+	if fileAnalysis.DiffType == filetree.Unmodified {
 		// 只有新增文件
 		if unchangedCount == 0 &&
 			removedCount == 0 &&
@@ -154,9 +157,9 @@ func updateDirSizeAndDiffType(fileAnalysis *FileAnalysis) int64 {
 }
 
 // GetFileAnalysis get file analysis
-func GetFileAnalysis(imgAnalysis *ImageAnalysis, index int) *FileAnalysis {
+func GetFileAnalysis(imgAnalysis *ImageAnalysis, index int) (*FileAnalysis, error) {
 
-	cache := imgAnalysis.TreeCache
+	// cache := imgAnalysis.TreeCache
 	layerCount := len(imgAnalysis.LayerAnalysisList)
 
 	layerIndex := layerCount - index - 1
@@ -167,24 +170,25 @@ func GetFileAnalysis(imgAnalysis *ImageAnalysis, index int) *FileAnalysis {
 	bottomTreeStop := layerIndex - 1
 	topTreeStart := layerIndex
 
-	tree := cache.Get(bottomTreeStart, bottomTreeStop, topTreeStart, topTreeStop)
+	tree, err := imgAnalysis.Comparer.GetTree(filetree.NewTreeIndexKey(bottomTreeStart, bottomTreeStop, topTreeStart, topTreeStop))
+	if err != nil {
+		return nil, err
+	}
 
-	return analyzeFile(tree)
+	return analyzeFile(tree), nil
 }
 
 // Analyze analyze the docker images
 func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
-	analyzer := image.GetAnalyzer(name)
-	reader, err := analyzer.Fetch()
+	resolver, err := dive.GetImageResolver(dive.SourceDockerEngine)
 	if err != nil {
 		return
 	}
-	defer reader.Close()
-	err = analyzer.Parse(reader)
+	image, err := resolver.Fetch(name)
 	if err != nil {
 		return
 	}
-	result, err := analyzer.Analyze()
+	result, err := image.Analyze()
 	if err != nil {
 		return
 	}
@@ -193,7 +197,7 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 	layerCount := len(result.Layers)
 	for i, layer := range result.Layers {
 		if i < layerCount-1 {
-			userSizeBytes += layer.Size()
+			userSizeBytes += layer.Size
 		}
 	}
 
@@ -220,20 +224,26 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 	}
 	imgAnalysis.InefficiencyAnalysisList = inefficiencyAnalysisList
 
-	cache := filetree.NewFileTreeCache(result.RefTrees)
-	cache.Build()
-	imgAnalysis.TreeCache = &cache
+	comparer := filetree.NewComparer(result.RefTrees)
+	errs := comparer.BuildCache()
+	if len(errs) != 0 {
+		err = errors.New(errs[0].Error())
+		return
+	}
+	imgAnalysis.Comparer = &comparer
 
 	// 生成各层的相关信息
+	max := len(result.Layers)
 	for index, layer := range result.Layers {
 		la := &LayerAnalysis{
-			ID:      layer.Id(),
+			ID:      layer.Id,
 			ShortID: layer.ShortId(),
-			Index:   layer.Index(),
-			Command: layer.Command(),
-			Size:    layer.Size(),
+			Index:   layer.Index,
+			Command: layer.Command,
+			Size:    layer.Size,
 		}
-		imgAnalysis.LayerAnalysisList[index] = la
+		// 更换层的顺序
+		imgAnalysis.LayerAnalysisList[max-index-1] = la
 	}
 	return
 }
