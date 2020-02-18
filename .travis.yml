@@ -2,12 +2,9 @@ language: go
 sudo: required
 
 go:
-  - "1.11"
+  - "1.13"
 
 script:
-  # - env GO111MODULE=on make test
-
-# after_success:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - docker build -t diving .
   - docker tag diving $DOCKER_USERNAME/diving
