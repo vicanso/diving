@@ -2,16 +2,17 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
-	"github.com/vicanso/elton"
 	_ "github.com/vicanso/diving/controller"
+	"github.com/vicanso/diving/log"
 	"github.com/vicanso/diving/router"
+	"github.com/vicanso/elton"
 
 	humanize "github.com/dustin/go-humanize"
 
@@ -22,6 +23,7 @@ import (
 	recover "github.com/vicanso/elton-recover"
 	responder "github.com/vicanso/elton-responder"
 	stats "github.com/vicanso/elton-stats"
+	maxprocs "go.uber.org/automaxprocs/maxprocs"
 )
 
 var (
@@ -56,6 +58,14 @@ func check() {
 	os.Exit(0)
 }
 
+func init() {
+
+	maxprocs.Set(maxprocs.Logger(func(format string, args ...interface{}) {
+		value := fmt.Sprintf(format, args...)
+		log.Default().Info(value)
+	}))
+}
+
 func main() {
 
 	flag.StringVar(&runMode, "mode", "", "running mode")
@@ -67,13 +77,7 @@ func main() {
 	}
 	listen := getListen()
 
-	c := zap.NewProductionConfig()
-	c.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	// 只针对panic 以上的日志增加stack trace
-	logger, err := c.Build(zap.AddStacktrace(zap.DPanicLevel))
-	if err != nil {
-		panic(err)
-	}
+	logger := log.Default()
 
 	d := elton.New()
 
@@ -124,7 +128,7 @@ func main() {
 	}
 
 	logger.Info("server will listen on " + listen)
-	err = d.ListenAndServe(listen)
+	err := d.ListenAndServe(listen)
 	if err != nil {
 		panic(err)
 	}
