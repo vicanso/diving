@@ -59,8 +59,7 @@ func check() {
 }
 
 func init() {
-
-	maxprocs.Set(maxprocs.Logger(func(format string, args ...interface{}) {
+	_, _ = maxprocs.Set(maxprocs.Logger(func(format string, args ...interface{}) {
 		value := fmt.Sprintf(format, args...)
 		log.Default().Info(value)
 	}))

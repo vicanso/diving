@@ -2,7 +2,7 @@ language: go
 sudo: required
 
 go:
-  - "1.13"
+  - "1.14"
 
 script:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
