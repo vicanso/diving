@@ -28,7 +28,7 @@ WORKDIR /home/go
 EXPOSE 7001
 
 COPY --from=builder /diving/diving /usr/local/bin/diving
-COPY --from=builder /diving/entrypoint /home/go/entrypoint.sh
+COPY --from=builder /diving/entrypoint.sh ~/entrypoint.sh
 
 CMD ["diving"]
 
