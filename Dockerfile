@@ -19,20 +19,14 @@ RUN apk update \
 
 FROM alpine 
 
-RUN addgroup -g 1000 go \
-	&& adduser -u 1000 -G go -s /bin/sh -D g
-
-USER go
-WORKDIR /home/go
-
 EXPOSE 7001
 
 COPY --from=builder /diving/diving /usr/local/bin/diving
-COPY --from=builder /diving/entrypoint.sh ~/entrypoint.sh
+COPY --from=builder /diving/entrypoint.sh /entrypoint.sh
 
 CMD ["diving"]
 
-ENTRYPOINT ["~/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
 
 HEALTHCHECK --interval=10s --timeout=3s \
   CMD diving --mode=check || exit 1
