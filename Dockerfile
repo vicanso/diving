@@ -12,7 +12,7 @@ FROM golang:1.14-alpine as builder
 COPY --from=webbuilder /diving /diving
 
 RUN apk update \
-  && apk add git gcc make \
+  && apk add docker git gcc make \
   && go get -u github.com/gobuffalo/packr/v2/packr2 \
   && cd /diving \
   && make build
@@ -21,6 +21,7 @@ FROM alpine
 
 EXPOSE 7001
 
+COPY --from=builder /usr/bin/docker /usr/bin/docker
 COPY --from=builder /diving/diving /usr/local/bin/diving
 COPY --from=builder /diving/entrypoint.sh /entrypoint.sh
 
