@@ -55,9 +55,9 @@ func init() {
 	g := router.NewAPIGroup("/images")
 	ctrl := imageCtrl{}
 
-	g.GET("/tree/*name", ctrl.getTree)
+	g.GET("/tree/*", ctrl.getTree)
 
-	g.GET("/detail/*name", ctrl.getBasicInfo)
+	g.GET("/detail/*", ctrl.getBasicInfo)
 
 	g.GET("/caches", ctrl.getCacheList)
 }
@@ -88,7 +88,7 @@ func doAnalyze(name string) {
 
 // getBasicInfo get basic info of image
 func (ctrl imageCtrl) getBasicInfo(c *elton.Context) (err error) {
-	name := c.Param("name")[1:]
+	name := c.Param("*")
 	var info *imageInfo
 	v, ok := imageInfoCache.Get(name)
 	if ok {
@@ -134,7 +134,7 @@ func (ctrl imageCtrl) getTree(c *elton.Context) (err error) {
 		return
 	}
 
-	name := c.Param("name")[1:]
+	name := c.Param("*")
 	v, ok := imageInfoCache.Get(name)
 	if !ok {
 		err = hes.New("can not get tree of image")
