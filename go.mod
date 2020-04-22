@@ -14,4 +14,5 @@ require (
 	github.com/wagoodman/dive v0.9.2
 	go.uber.org/automaxprocs v1.3.0
 	go.uber.org/zap v1.14.1
+	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 )

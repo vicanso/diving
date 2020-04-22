@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	_ "github.com/vicanso/diving/controller"
 	"github.com/vicanso/diving/log"
@@ -72,18 +74,18 @@ func main() {
 
 	logger := log.Default()
 
-	d := elton.New()
+	e := elton.New()
 
-	d.OnError(func(c *elton.Context, err error) {
+	e.OnError(func(c *elton.Context, err error) {
 		logger.DPanic("unexpected error",
 			zap.String("uri", c.Request.RequestURI),
 			zap.Error(err),
 		)
 	})
 
-	d.Use(middleware.NewRecover())
+	e.Use(middleware.NewRecover())
 
-	d.Use(middleware.NewStats(middleware.StatsConfig{
+	e.Use(middleware.NewStats(middleware.StatsConfig{
 		OnStats: func(statsInfo *middleware.StatsInfo, _ *elton.Context) {
 			logger.Info("access log",
 				zap.String("ip", statsInfo.IP),
@@ -96,31 +98,36 @@ func main() {
 		},
 	}))
 
-	d.Use(middleware.NewDefaultError())
+	e.Use(middleware.NewDefaultError())
 
-	d.Use(func(c *elton.Context) error {
+	e.Use(func(c *elton.Context) error {
 		c.NoCache()
 		return c.Next()
 	})
 
-	d.Use(middleware.NewDefaultFresh())
-	d.Use(middleware.NewDefaultETag())
+	e.Use(middleware.NewDefaultFresh())
+	e.Use(middleware.NewDefaultETag())
 
-	d.Use(middleware.NewDefaultResponder())
+	e.Use(middleware.NewDefaultResponder())
 
 	// health check
-	d.GET("/ping", func(c *elton.Context) (err error) {
+	e.GET("/ping", func(c *elton.Context) (err error) {
 		c.Body = "pong"
 		return
 	})
 
 	groups := router.GetGroups()
 	for _, g := range groups {
-		d.AddGroup(g)
+		e.AddGroup(g)
+	}
+
+	// http1与http2均支持
+	e.Server = &http.Server{
+		Handler: h2c.NewHandler(e, &http2.Server{}),
 	}
 
 	logger.Info("server will listen on " + listen)
-	err := d.ListenAndServe(listen)
+	err := e.ListenAndServe(listen)
 	if err != nil {
 		panic(err)
 	}
