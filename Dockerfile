@@ -1,4 +1,4 @@
-FROM node:12-alpine as webbuilder
+FROM node:14-alpine as webbuilder
 
 ADD ./ /diving
 
@@ -7,7 +7,7 @@ RUN cd /diving/web \
   && npm run build \
   && rm -rf node_module
 
-FROM golang:1.14-alpine as builder
+FROM golang:1.15-alpine as builder
 
 COPY --from=webbuilder /diving /diving
 
