@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"time"
 
 	"github.com/gobuffalo/packr/v2"
 	"github.com/vicanso/diving/router"
@@ -72,11 +73,11 @@ func sendFile(c *elton.Context, file string) (err error) {
 }
 
 func (ctrl assetCtrl) index(c *elton.Context) (err error) {
-	c.CacheMaxAge("10s")
+	c.CacheMaxAge(10 * time.Second)
 	return sendFile(c, "index.html")
 }
 
 func (ctrl assetCtrl) favIcon(c *elton.Context) (err error) {
-	c.CacheMaxAge("10m")
+	c.CacheMaxAge(10 * time.Minute)
 	return sendFile(c, "favicon.ico")
 }

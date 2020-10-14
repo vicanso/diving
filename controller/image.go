@@ -116,7 +116,7 @@ func (ctrl imageCtrl) getBasicInfo(c *elton.Context) (err error) {
 		return
 	}
 	if !service.IsDev() {
-		c.CacheMaxAge("5m")
+		c.CacheMaxAge(5 * time.Minute)
 	}
 	c.Body = info.Analysis
 	return
@@ -154,7 +154,7 @@ func (ctrl imageCtrl) getTree(c *elton.Context) (err error) {
 		return
 	}
 	if !service.IsDev() {
-		c.CacheMaxAge("5m")
+		c.CacheMaxAge(5 * time.Minute)
 	}
 
 	result, err := service.GetFileAnalysis(info.Analysis, index)
