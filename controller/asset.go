@@ -54,9 +54,9 @@ func init() {
 	g.GET("/static/*", middleware.NewStaticServe(sf, middleware.StaticServeConfig{
 		Path: "/static",
 		// 客户端缓存一年
-		MaxAge: 365 * 24 * 3600,
+		MaxAge: 365 * 24 * time.Hour,
 		// 缓存服务器缓存一个小时
-		SMaxAge:             60 * 60,
+		SMaxAge:             time.Hour,
 		DenyQueryString:     true,
 		DisableLastModified: true,
 	}))
