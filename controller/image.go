@@ -5,17 +5,17 @@ import (
 	"strconv"
 	"time"
 
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/vicanso/diving/router"
 	"github.com/vicanso/diving/service"
 	"github.com/vicanso/elton"
 	"github.com/vicanso/hes"
+	lruttl "github.com/vicanso/lru-ttl"
 	"go.uber.org/zap"
 )
 
 var (
 	// imageInfoCache image basic info
-	imageInfoCache *lru.Cache
+	imageInfoCache *lruttl.Cache
 )
 
 const (
@@ -47,11 +47,7 @@ type (
 )
 
 func init() {
-	c, err := lru.New(32)
-	if err != nil {
-		panic(err)
-	}
-	imageInfoCache = c
+	imageInfoCache = lruttl.New(32, 30*time.Minute)
 	g := router.NewAPIGroup("/images")
 	ctrl := imageCtrl{}
 
