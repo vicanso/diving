@@ -2,8 +2,11 @@ package service
 
 import (
 	"errors"
+	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/wagoodman/dive/dive"
 
@@ -11,6 +14,14 @@ import (
 )
 
 type (
+	imageInfo struct {
+		fetchedAt time.Time
+		name      string
+	}
+	fetchedImages struct {
+		sync.Mutex
+		imageInfoList []*imageInfo
+	}
 	// ImageAnalysis analysis for image
 	ImageAnalysis struct {
 		// Efficiency space efficiency of image
@@ -57,6 +68,51 @@ type (
 		Count          int    `json:"count,omitempty"`
 	}
 )
+
+var currentFetchedImages = &fetchedImages{}
+
+// Add 添加image
+func (fi *fetchedImages) Add(name string) {
+	fi.Lock()
+	defer fi.Unlock()
+	if len(fi.imageInfoList) == 0 {
+		fi.imageInfoList = make([]*imageInfo, 0)
+	}
+	var found *imageInfo
+	for _, item := range fi.imageInfoList {
+		if item.name == name {
+			found = item
+		}
+	}
+	if found != nil {
+		found.fetchedAt = time.Now()
+	} else {
+		fi.imageInfoList = append(fi.imageInfoList, &imageInfo{
+			fetchedAt: time.Now(),
+			name:      name,
+		})
+	}
+}
+
+// ClearExpired 清除过期的镜像
+func (fi *fetchedImages) ClearExpired() []string {
+	fi.Lock()
+	defer fi.Unlock()
+	// 一小时前的镜像则删除
+	expiredTime := time.Now().AddDate(0, 0, -1)
+	expiredImages := make([]string, 0)
+	infos := make([]*imageInfo, 0)
+	for _, item := range fi.imageInfoList {
+		if item.fetchedAt.Before(expiredTime) {
+			expiredImages = append(expiredImages, item.name)
+		} else {
+			infos = append(infos, item)
+		}
+	}
+	fi.imageInfoList = infos
+
+	return expiredImages
+}
 
 // findOrCreateDir 查找目录或创建该目录
 func findOrCreateDir(m *FileAnalysis, pathList []string) *FileAnalysis {
@@ -156,6 +212,19 @@ func updateDirSizeAndDiffType(fileAnalysis *FileAnalysis) int64 {
 	return size
 }
 
+// RemoveExpiredImages remove expired image
+func RemoveExpiredImages() (err error) {
+	expiredImages := currentFetchedImages.ClearExpired()
+	for _, name := range expiredImages {
+		cmd := exec.Command("docker", "rmi", name)
+		e := cmd.Run()
+		if e != nil {
+			err = e
+		}
+	}
+	return
+}
+
 // GetFileAnalysis get file analysis
 func GetFileAnalysis(imgAnalysis *ImageAnalysis, index int) (*FileAnalysis, error) {
 
@@ -245,5 +314,7 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 		// 更换层的顺序
 		imgAnalysis.LayerAnalysisList[max-index-1] = la
 	}
+	// 添加至当前已拉取的镜像
+	currentFetchedImages.Add(name)
 	return
 }

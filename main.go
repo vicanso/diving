@@ -11,14 +11,13 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
+	humanize "github.com/dustin/go-humanize"
 	_ "github.com/vicanso/diving/controller"
 	"github.com/vicanso/diving/log"
 	"github.com/vicanso/diving/router"
+	_ "github.com/vicanso/diving/schedule"
 	"github.com/vicanso/elton"
 	"github.com/vicanso/elton/middleware"
-
-	humanize "github.com/dustin/go-humanize"
-
 	maxprocs "go.uber.org/automaxprocs/maxprocs"
 )
 
