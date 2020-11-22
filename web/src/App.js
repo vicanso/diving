@@ -72,7 +72,8 @@ class App extends Component {
       if (times > 3) {
         throw new Error("Analyse image isn't done, please try again later.");
       }
-      const { status, data } = await fetchImage(name);
+      const fetchName = name.includes(":") ? name : `${name}:latest`;
+      const { status, data } = await fetchImage(fetchName);
       if (status === 202) {
         setTimeout(() => {
           this.getBasicInfo(name, times + 1);
