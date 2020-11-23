@@ -23,8 +23,12 @@ const ImageCacheURL = "/api/images/caches";
 
 const layerCache = {};
 
+function generateImageName(name) {
+  return name.includes(":") ? name : `${name}:latest`;
+}
+
 export function fetchImage(name) {
-  return axios.get(ImageDetailURL + name);
+  return axios.get(ImageDetailURL + generateImageName(name));
 }
 
 export function fetchLayer(image, layer) {
@@ -32,7 +36,9 @@ export function fetchLayer(image, layer) {
   if (layerCache[key]) {
     return layerCache[key];
   }
-  const p = axios.get(`${ImageLayerDetailURL}${image}?layer=${layer}`);
+  const p = axios.get(
+    `${ImageLayerDetailURL}${generateImageName(image)}?layer=${layer}`
+  );
   layerCache[key] = p;
   p.catch(err => {
     delete layerCache[key];

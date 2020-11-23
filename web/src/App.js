@@ -10,7 +10,8 @@ import {
   Icon,
   Tooltip,
   Table,
-  Progress
+  Progress,
+  Popover
 } from "antd";
 
 import bytes from "bytes";
@@ -43,14 +44,14 @@ class App extends Component {
   };
   constructor() {
     super();
-    const { location } = window;
+    const { location, decodeURIComponent } = window;
     if (location.search) {
       const arr = location.search.substring(1).split("&");
       const query = {};
       // 简单处理，不考虑有相同key的情况
       arr.forEach(item => {
         const tmp = item.split("=");
-        query[tmp[0]] = tmp[1];
+        query[tmp[0]] = decodeURIComponent(tmp[1]);
       });
       if (query.image) {
         this.state.image = query.image;
@@ -72,8 +73,7 @@ class App extends Component {
       if (times > 3) {
         throw new Error("Analyse image isn't done, please try again later.");
       }
-      const fetchName = name.includes(":") ? name : `${name}:latest`;
-      const { status, data } = await fetchImage(fetchName);
+      const { status, data } = await fetchImage(name);
       if (status === 202) {
         setTimeout(() => {
           this.getBasicInfo(name, times + 1);
@@ -141,6 +141,12 @@ class App extends Component {
       image: name
     });
     this.getBasicInfo(name, 0);
+    const { location, history, encodeURIComponent } = window;
+    history.pushState(
+      null,
+      "",
+      `${location.pathname}?image=${encodeURIComponent(name)}`
+    );
   }
   async refreshCacheImages() {
     const { caches } = this.state;
@@ -333,6 +339,29 @@ class App extends Component {
     ));
     return <Row className="diving-basic-info diving-row">{basicInfoCols}</Row>;
   }
+  formatCommand(text) {
+    const result = [];
+    text.split(";").forEach(function(value) {
+      const tmpResult = [];
+      value.split("&&").forEach(function(item) {
+        if (item) {
+          tmpResult.push(item);
+        }
+      });
+      if (tmpResult.length) {
+        result.push(tmpResult.join("&& \\ \n"));
+      }
+    });
+    return (
+      <pre
+        style={{
+          width: "600px"
+        }}
+      >
+        {result.join("; \\ \n")}
+      </pre>
+    );
+  }
   renderLayersAndInefficiency() {
     const { basicInfo } = this.state;
     const layerColumns = [
@@ -350,13 +379,15 @@ class App extends Component {
         title: "Command",
         dataIndex: "command",
         render: text => (
-          <span
-            style={{
-              wordBreak: "break-all"
-            }}
-          >
-            {text}
-          </span>
+          <Popover content={this.formatCommand(text)}>
+            <span
+              style={{
+                wordBreak: "break-all"
+              }}
+            >
+              {text}
+            </span>
+          </Popover>
         )
       }
     ];
@@ -413,7 +444,7 @@ class App extends Component {
     return <FileTree image={image} layers={basicInfo.layerAnalysisList} />;
   }
   renderDetailInfo() {
-    const { step } = this.state;
+    const { step, image } = this.state;
     if (step !== StepDetail) {
       return;
     }
@@ -428,7 +459,10 @@ class App extends Component {
               src={logo}
               alt="logo"
             />
-            <h1>Diving</h1>
+            <h1>
+              Diving
+              <span>{image}</span>
+            </h1>
           </a>
         </header>
         <div className="diving-detail-info">

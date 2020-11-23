@@ -98,7 +98,7 @@ func (fi *fetchedImages) Add(name string) {
 func (fi *fetchedImages) ClearExpired() []string {
 	fi.Lock()
 	defer fi.Unlock()
-	// 一小时前的镜像则删除
+	// 一天前的镜像则删除
 	expiredTime := time.Now().AddDate(0, 0, -1)
 	expiredImages := make([]string, 0)
 	infos := make([]*imageInfo, 0)
@@ -261,20 +261,12 @@ func Analyze(name string) (imgAnalysis *ImageAnalysis, err error) {
 	if err != nil {
 		return
 	}
-	var userSizeBytes uint64
-	// 默认的计算 user size bytes有误
-	layerCount := len(result.Layers)
-	for i, layer := range result.Layers {
-		if i < layerCount-1 {
-			userSizeBytes += layer.Size
-		}
-	}
 
 	// 镜像基本信息
 	imgAnalysis = &ImageAnalysis{
 		Efficiency:        result.Efficiency,
 		SizeBytes:         result.SizeBytes,
-		UserSizeBytes:     userSizeBytes,
+		UserSizeBytes:     result.UserSizeByes,
 		WastedBytes:       result.WastedBytes,
 		LayerAnalysisList: make([]*LayerAnalysis, len(result.Layers)),
 	}

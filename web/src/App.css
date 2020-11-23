@@ -40,6 +40,10 @@
   font-family: Avenir,Helvetica Neue,Arial,Helvetica,sans-serif;
   vertical-align: middle;
 }
+.diving-logo h1 span {
+  margin-left: 15px;
+  font-size: 16px;
+}
 
 .diving-cache-image {
   border-bottom: 1px solid #ebedf0;

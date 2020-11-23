@@ -24,11 +24,6 @@ const (
 	analysisDone
 )
 
-const (
-	// imageInfoTTL ttl for image info
-	imageInfoTTL = 60 * 10
-)
-
 type (
 	// imageCtrl image ctrl
 	imageCtrl struct{}
@@ -89,10 +84,6 @@ func (ctrl imageCtrl) getBasicInfo(c *elton.Context) (err error) {
 	v, ok := imageInfoCache.Get(name)
 	if ok {
 		info = v.(*imageInfo)
-		// 如果已过期
-		if info.CreatedAt+imageInfoTTL < time.Now().Unix() {
-			info = nil
-		}
 	}
 	if info == nil {
 		info = &imageInfo{
@@ -169,10 +160,7 @@ func (ctrl imageCtrl) getCacheList(c *elton.Context) (err error) {
 		v, ok := imageInfoCache.Get(key)
 		if ok {
 			info := v.(*imageInfo)
-			// 只返回未过期的
-			if info.CreatedAt+imageInfoTTL > time.Now().Unix() {
-				result[key.(string)] = info
-			}
+			result[key.(string)] = info
 		}
 	}
 	c.Body = result

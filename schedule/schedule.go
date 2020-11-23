@@ -15,6 +15,8 @@
 package schedule
 
 import (
+	"time"
+
 	"github.com/robfig/cron/v3"
 	"github.com/vicanso/diving/log"
 	"github.com/vicanso/diving/service"
@@ -35,9 +37,13 @@ func removeExpiredImages() {
 	// 镜像删除，如果程序刚好重启等有可能导致镜像未删除
 	// 服务对应的实体机有硬盘空间监控，因此问题不太大
 	err := service.RemoveExpiredImages()
+	startedAt := time.Now()
 	if err != nil {
 		logger.Error("remove expired images fail",
 			zap.Error(err),
 		)
 	}
+	logger.Info("remove expired images done",
+		zap.String("use", time.Since(startedAt).String()),
+	)
 }
