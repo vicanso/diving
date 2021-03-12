@@ -7,7 +7,7 @@ RUN cd /diving/web \
   && npm run build \
   && rm -rf node_module
 
-FROM golang:1.15-alpine as builder
+FROM golang:1.16-alpine as builder
 
 COPY --from=webbuilder /diving /diving
 
