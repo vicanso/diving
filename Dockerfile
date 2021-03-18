@@ -13,9 +13,9 @@ COPY --from=webbuilder /diving /diving
 
 RUN apk update \
   && apk add docker git gcc make \
+  && cd /diving \
   && rm -rf asset/dist \
   && cp -rf web/build asset/dist \
-  && cd /diving \
   && make build
 
 FROM alpine 
