@@ -13,7 +13,8 @@ COPY --from=webbuilder /diving /diving
 
 RUN apk update \
   && apk add docker git gcc make \
-  && go get -u github.com/gobuffalo/packr/v2/packr2 \
+  && rm -rf asset/dist \
+  && cp -rf web/build asset/dist \
   && cd /diving \
   && make build
 
