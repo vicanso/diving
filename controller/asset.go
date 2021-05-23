@@ -10,11 +10,8 @@ import (
 	"github.com/vicanso/elton/middleware"
 )
 
-type (
-	// assetCtrl asset ctrl
-	assetCtrl struct {
-	}
-)
+// assetCtrl asset ctrl
+type assetCtrl struct{}
 
 var assetFS = middleware.NewEmbedStaticFS(asset.GetFS(), "dist")
 

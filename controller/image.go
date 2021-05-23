@@ -24,9 +24,9 @@ const (
 	analysisDone
 )
 
+// imageCtrl image ctrl
+type imageCtrl struct{}
 type (
-	// imageCtrl image ctrl
-	imageCtrl struct{}
 	imageInfo struct {
 		// CreatedAt create time
 		CreatedAt int64 `json:"createdAt,omitempty"`
