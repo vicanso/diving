@@ -8,13 +8,12 @@ replace github.com/docker/docker => github.com/docker/engine v0.0.0-201908222057
 require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/vicanso/elton v1.4.0
+	github.com/vicanso/elton v1.4.1
 	github.com/vicanso/hes v0.3.9
-	github.com/vicanso/lru-ttl v0.4.2
+	github.com/vicanso/lru-ttl v0.5.0
 	github.com/wagoodman/dive v0.10.0
 	go.uber.org/automaxprocs v1.4.0
-	go.uber.org/zap v1.16.0
-	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
-	golang.org/x/net v0.0.0-20210521195947-fe42d452be8f
-	golang.org/x/tools v0.1.1 // indirect
+	go.uber.org/zap v1.17.0
+	golang.org/x/net v0.0.0-20210525063256-abc453219eb5
+	golang.org/x/sys v0.0.0-20210510120138-977fb7262007 // indirect
 )

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"bytes"
 	"time"
 
 	"github.com/vicanso/diving/asset"
@@ -32,23 +31,20 @@ func init() {
 	}))
 }
 
-func sendFile(c *elton.Context, file string) (err error) {
-	// 因为静态文件打包至程序中，直接读取
-	buf, err := assetFS.Get(file)
+func (ctrl assetCtrl) index(c *elton.Context) (err error) {
+	err = assetFS.SendFile(c, "index.html")
 	if err != nil {
 		return
 	}
-	c.SetContentTypeByExt(file)
-	c.BodyBuffer = bytes.NewBuffer(buf)
+	c.CacheMaxAge(10 * time.Second)
 	return
 }
 
-func (ctrl assetCtrl) index(c *elton.Context) (err error) {
-	c.CacheMaxAge(10 * time.Second)
-	return sendFile(c, "index.html")
-}
-
 func (ctrl assetCtrl) favIcon(c *elton.Context) (err error) {
+	err = assetFS.SendFile(c, "favicon.ico")
+	if err != nil {
+		return
+	}
 	c.CacheMaxAge(10 * time.Minute)
-	return sendFile(c, "favicon.ico")
+	return
 }
