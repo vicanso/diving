@@ -21,9 +21,9 @@ import "./FileTree.css";
 const Option = Select.Option;
 
 const colors = {
-  changed: "#ff9100",
-  added: "#00e676",
-  removed: "#ff3d00",
+  changed: "#f0a020",
+  added: "#18a058",
+  removed: "#d03050",
   default: "rgba(0, 0, 0, 0.65)"
 };
 const sizeLimitArr = [
