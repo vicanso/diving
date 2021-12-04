@@ -2,12 +2,10 @@ package controller
 
 import (
 	"github.com/vicanso/elton"
-	"github.com/vicanso/diving/log"
 	"github.com/vicanso/hes"
 )
 
 var (
-	logger           = log.Default()
 	errQueryNotAllow = hes.New("query is not allowed")
 )
 

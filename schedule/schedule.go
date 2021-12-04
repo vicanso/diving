@@ -15,15 +15,13 @@
 package schedule
 
 import (
+	"context"
 	"time"
 
 	"github.com/robfig/cron/v3"
 	"github.com/vicanso/diving/log"
 	"github.com/vicanso/diving/service"
-	"go.uber.org/zap"
 )
-
-var logger = log.Default()
 
 func init() {
 	c := cron.New()
@@ -39,11 +37,12 @@ func removeExpiredImages() {
 	err := service.RemoveExpiredImages()
 	startedAt := time.Now()
 	if err != nil {
-		logger.Error("remove expired images fail",
-			zap.Error(err),
-		)
+		log.Error(context.Background()).
+			Err(err).
+			Msg("remove expired images fail")
+		return
 	}
-	logger.Info("remove expired images done",
-		zap.String("use", time.Since(startedAt).String()),
-	)
+	log.Info(context.Background()).
+		Str("use", time.Since(startedAt).String()).
+		Msg("remove expired images done")
 }

@@ -1,21 +1,22 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"time"
 
-	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
-	humanize "github.com/dustin/go-humanize"
+	"github.com/dustin/go-humanize"
 	_ "github.com/vicanso/diving/controller"
 	"github.com/vicanso/diving/log"
 	"github.com/vicanso/diving/router"
 	_ "github.com/vicanso/diving/schedule"
+	"github.com/vicanso/diving/util"
 	"github.com/vicanso/elton"
 	"github.com/vicanso/elton/middleware"
 	maxprocs "go.uber.org/automaxprocs/maxprocs"
@@ -56,7 +57,7 @@ func check() {
 func init() {
 	_, _ = maxprocs.Set(maxprocs.Logger(func(format string, args ...interface{}) {
 		value := fmt.Sprintf(format, args...)
-		log.Default().Info(value)
+		log.Info(context.Background()).Msg(value)
 	}))
 }
 
@@ -71,35 +72,35 @@ func main() {
 	}
 	listen := getListen()
 
-	logger := log.Default()
-
 	e := elton.New()
 
 	e.OnError(func(c *elton.Context, err error) {
-		logger.DPanic("unexpected error",
-			zap.String("uri", c.Request.RequestURI),
-			zap.Error(err),
-		)
+		log.Error(c.Context()).
+			Str("uri", c.Request.RequestURI).
+			Err(err).
+			Msg("unexpected error")
 	})
 
 	e.Use(middleware.NewRecover())
 
 	e.Use(middleware.NewStats(middleware.StatsConfig{
-		OnStats: func(statsInfo *middleware.StatsInfo, _ *elton.Context) {
-			logger.Info("access log",
-				zap.String("ip", statsInfo.IP),
-				zap.String("method", statsInfo.Method),
-				zap.String("uri", statsInfo.URI),
-				zap.Int("status", statsInfo.Status),
-				zap.String("consuming", statsInfo.Consuming.String()),
-				zap.String("size", humanize.Bytes(uint64(statsInfo.Size))),
-			)
+		OnStats: func(statsInfo *middleware.StatsInfo, c *elton.Context) {
+			log.Info(c.Context()).
+				Str("ip", statsInfo.IP).
+				Str("method", statsInfo.Method).
+				Str("uri", statsInfo.URI).
+				Int("status", statsInfo.Status).
+				Str("latency", statsInfo.Latency.String()).
+				Str("size", humanize.Bytes(uint64(statsInfo.Size))).
+				Msg("access log")
 		},
 	}))
 
 	e.Use(middleware.NewDefaultError())
 
 	e.Use(func(c *elton.Context) error {
+		ctx := util.SetTraceID(c.Context(), util.RandomString(8))
+		c.WithContext(ctx)
 		c.NoCache()
 		return c.Next()
 	})
@@ -125,7 +126,7 @@ func main() {
 		Handler: h2c.NewHandler(e, &http2.Server{}),
 	}
 
-	logger.Info("server will listen on " + listen)
+	log.Info(context.Background()).Msg("server will listen on " + listen)
 	err := e.ListenAndServe(listen)
 	if err != nil {
 		panic(err)

@@ -1,16 +1,17 @@
 package controller
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/vicanso/diving/log"
 	"github.com/vicanso/diving/router"
 	"github.com/vicanso/diving/service"
 	"github.com/vicanso/elton"
 	"github.com/vicanso/hes"
 	lruttl "github.com/vicanso/lru-ttl"
-	"go.uber.org/zap"
 )
 
 var (
@@ -63,10 +64,10 @@ func doAnalyze(name string) {
 			Err:           err,
 			TimeConsuming: time.Since(startedAt),
 		})
-		logger.Error("analyze fail",
-			zap.String("name", name),
-			zap.Error(err),
-		)
+		log.Error(context.Background()).
+			Str("name", name).
+			Err(err).
+			Msg("analyze fail")
 		return
 	}
 	imageInfoCache.Add(name, &imageInfo{
