@@ -47,7 +47,10 @@ func init() {
 	g := router.NewAPIGroup("/images")
 	ctrl := imageCtrl{}
 
-	g.GET("/tree/*", ctrl.getTree)
+	g.GET(
+		"/tree/*",
+		ctrl.getTree,
+	)
 
 	g.GET("/detail/*", ctrl.getBasicInfo)
 
@@ -141,14 +144,11 @@ func (ctrl imageCtrl) getTree(c *elton.Context) (err error) {
 		err = hes.New("the layer index is too big")
 		return
 	}
-	if !service.IsDev() {
-		c.CacheMaxAge(5 * time.Minute)
-	}
-
 	result, err := service.GetFileAnalysis(info.Analysis, index)
 	if err != nil {
 		return
 	}
+	c.CacheMaxAge(5 * time.Minute)
 	c.Body = result
 	return
 }

@@ -6,18 +6,18 @@ go 1.17
 replace github.com/docker/docker => github.com/docker/engine v17.12.0-ce-rc1.0.20200916142827-bd33bbf0497b+incompatible
 
 require (
-	github.com/containerd/containerd v1.6.0 // indirect
+	github.com/containerd/containerd v1.6.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.26.1
-	github.com/vicanso/elton v1.8.2
+	github.com/vicanso/elton v1.8.3
 	github.com/vicanso/go-mask v0.4.0
 	github.com/vicanso/hes v0.5.0
 	github.com/vicanso/lru-ttl v1.3.2
 	github.com/wagoodman/dive v0.10.0
 	go.uber.org/automaxprocs v1.4.0
-	golang.org/x/net v0.0.0-20220107192237-5cfca573fb4d
-	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
+	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
 )
 
 require (
@@ -25,8 +25,8 @@ require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/awesome-gocui/gocui v1.1.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
-	github.com/docker/cli v20.10.12+incompatible // indirect
-	github.com/docker/distribution v2.8.0+incompatible // indirect
+	github.com/docker/cli v20.10.13+incompatible // indirect
+	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v1.4.2-0.20190924003213-a8608b5b67c7 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
@@ -51,11 +51,11 @@ require (
 	github.com/tidwall/gjson v1.14.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	github.com/vicanso/intranet-ip v0.0.1 // indirect
+	github.com/vicanso/intranet-ip v0.1.0 // indirect
 	github.com/vicanso/keygrip v1.2.1 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20220218161850-94dd64e39d7c // indirect
-	google.golang.org/grpc v1.44.0 // indirect
+	google.golang.org/genproto v0.0.0-20220310185008-1973136f34c6 // indirect
+	google.golang.org/grpc v1.45.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 )

@@ -19,12 +19,31 @@ import (
 	"github.com/vicanso/diving/util"
 	"github.com/vicanso/elton"
 	"github.com/vicanso/elton/middleware"
+	lruttl "github.com/vicanso/lru-ttl"
 	maxprocs "go.uber.org/automaxprocs/maxprocs"
 )
 
 var (
 	runMode string
 )
+
+type cacheStore struct {
+	lru *lruttl.Cache
+}
+
+func (c *cacheStore) Get(ctx context.Context, key string) ([]byte, error) {
+	value, ok := c.lru.Get(key)
+	if !ok {
+		return nil, nil
+	}
+	buf, _ := value.([]byte)
+	return buf, nil
+}
+
+func (c *cacheStore) Set(ctx context.Context, key string, data []byte, ttl time.Duration) error {
+	c.lru.Add(key, data, ttl)
+	return nil
+}
 
 // 获取监听地址
 func getListen() string {
@@ -97,6 +116,12 @@ func main() {
 	}))
 
 	e.Use(middleware.NewDefaultError())
+
+	e.Use(middleware.NewCache(middleware.CacheConfig{
+		Store: &cacheStore{
+			lru: lruttl.New(100, 5*time.Minute),
+		},
+	}))
 
 	e.Use(func(c *elton.Context) error {
 		ctx := util.SetTraceID(c.Context(), util.RandomString(8))
