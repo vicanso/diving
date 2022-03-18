@@ -49,6 +49,7 @@ func init() {
 
 	g.GET(
 		"/tree/*",
+		httpCache,
 		ctrl.getTree,
 	)
 

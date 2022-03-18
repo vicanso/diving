@@ -10,14 +10,14 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.26.1
-	github.com/vicanso/elton v1.8.3
+	github.com/vicanso/elton v1.8.4
 	github.com/vicanso/go-mask v0.4.0
 	github.com/vicanso/hes v0.5.0
-	github.com/vicanso/lru-ttl v1.3.2
+	github.com/vicanso/lru-ttl v1.4.0
 	github.com/wagoodman/dive v0.10.0
 	go.uber.org/automaxprocs v1.4.0
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
-	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
+	golang.org/x/sys v0.0.0-20220318055525-2edf467146b5 // indirect
 )
 
 require (
@@ -55,7 +55,7 @@ require (
 	github.com/vicanso/keygrip v1.2.1 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20220310185008-1973136f34c6 // indirect
+	google.golang.org/genproto v0.0.0-20220317150908-0efb43f6373e // indirect
 	google.golang.org/grpc v1.45.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 )
