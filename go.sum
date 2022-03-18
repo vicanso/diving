@@ -854,8 +854,8 @@ github.com/urfave/cli v0.0.0-20171014202726-7bc6a0acffa5/go.mod h1:70zkFmudgCuE/
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli v1.22.2/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
-github.com/vicanso/elton v1.8.4 h1:2xsjALcz4Ij7pFFwds4Cuf1J1pDvZAmVb2oYZ115m74=
-github.com/vicanso/elton v1.8.4/go.mod h1:9aLyNA+6hDTUGCyufmcIhwbMff2ZWIGi98PhlGnRg3w=
+github.com/vicanso/elton v1.8.5 h1:DEbRS8m971pakieQBzYo/tvwIkQ49aK80ToKyGLj2dA=
+github.com/vicanso/elton v1.8.5/go.mod h1:9aLyNA+6hDTUGCyufmcIhwbMff2ZWIGi98PhlGnRg3w=
 github.com/vicanso/go-mask v0.4.0 h1:8VzYlGSSPZbPyNoKiutd0cjBS2iveZ7PXWjQP3j+GgQ=
 github.com/vicanso/go-mask v0.4.0/go.mod h1:G/FRCgEXAoLvIRf4brRKzeilPkIAH866tD458Lnf+os=
 github.com/vicanso/hes v0.5.0 h1:CLbjbJl5lvVyAD44Dai0EXatGL7L5UWpvNwVtMyS2Eg=
