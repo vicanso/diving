@@ -10,7 +10,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.26.1
-	github.com/vicanso/elton v1.8.5
+	github.com/vicanso/elton v1.9.0
 	github.com/vicanso/go-mask v0.4.0
 	github.com/vicanso/hes v0.5.0
 	github.com/vicanso/lru-ttl v1.4.0
