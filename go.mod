@@ -6,12 +6,12 @@ go 1.18
 replace github.com/docker/docker => github.com/docker/engine v17.12.0-ce-rc1.0.20200916142827-bd33bbf0497b+incompatible
 
 require (
-	github.com/containerd/containerd v1.6.1 // indirect
+	github.com/containerd/containerd v1.6.4 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.26.1
 	github.com/vicanso/elton v1.9.1
-	github.com/vicanso/go-mask v0.5.0
+	github.com/vicanso/go-mask v1.0.0
 	github.com/vicanso/hes v0.5.0
 	github.com/vicanso/lru-ttl v1.5.1
 	github.com/wagoodman/dive v0.10.0
@@ -55,7 +55,7 @@ require (
 	github.com/vicanso/keygrip v1.2.1 // indirect
 	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20220503193339-ba3ae3f07e29 // indirect
+	google.golang.org/genproto v0.0.0-20220504150022-98cd25cafc72 // indirect
 	google.golang.org/grpc v1.46.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 )
