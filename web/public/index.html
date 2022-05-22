@@ -25,6 +25,10 @@
     <script>
       var _hmt = _hmt || [];
       (function() {
+        // 只针对此域名加载统计
+        if (document.domain !== "diving.npmtrend.com") {
+          return;
+        }
         var hm = document.createElement("script");
         hm.src = "https://hm.baidu.com/hm.js?a87c59f844a8c1bb42c2d4497730d4b1";
         var s = document.getElementsByTagName("script")[0]; 
