@@ -1,4 +1,4 @@
-FROM node:16-alpine as webbuilder
+FROM node:18-alpine as webbuilder
 
 ADD ./ /diving
 
