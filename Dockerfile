@@ -2,6 +2,8 @@ FROM node:18-alpine as webbuilder
 
 ADD ./ /diving
 
+ENV NODE_OPTIONS=--openssl-legacy-provider
+
 RUN cd /diving/web \
   && npm i \
   && npm run build \
