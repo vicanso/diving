@@ -4,7 +4,7 @@ export GO111MODULE = on
 
 # for dev
 dev:
-	export GO_ENV=dev && fresh
+	air -c .air.toml
 
 # for test
 test:
