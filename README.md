@@ -1,5 +1,5 @@
 
-# This repo is archived, [diving-rs](https://github.com/vicanso/diving-rs) instead of it. [diving-rs](https://github.com/vicanso/diving-rs) is fast and simple, develop with Rust.
+# This repo is archived, please use  [diving-rs](https://github.com/vicanso/diving-rs) instead of it. It is fast and simple, develop with Rust.
 
 # diving
 
