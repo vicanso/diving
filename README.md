@@ -1,5 +1,8 @@
 # diving
 
+This repo is archived, [diving-rs](https://github.com/vicanso/diving-rs) instead of it.
+[Diving-rs](https://github.com/vicanso/diving-rs) is fast and simple, develop with Rust.
+
 Using diving you can analyze docker image on the website. It use [dive](https://github.com/wagoodman/dive) to get the analyzed information.
 
 
